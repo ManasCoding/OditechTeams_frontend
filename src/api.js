@@ -1,4 +1,4 @@
-// Shared API base URL — reads from .env (VITE_API_URL), falls back to localhost for local dev
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// Shared API base URL — reads from .env (VITE_API_URL), falls back to the deployed backend
+const API_URL = import.meta.env.VITE_API_URL || 'https://oditechteams-backend.onrender.com';
 
 export default API_URL;
