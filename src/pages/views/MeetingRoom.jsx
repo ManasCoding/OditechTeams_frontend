@@ -403,7 +403,7 @@ export default function MeetingRoom() {
     }
 
     // No state — user opened the URL directly (e.g. via copy-link)
-    fetch(``${API_URL}/api/meetings/${meetingId}`)
+    fetch(`${API_URL}/api/meetings/${meetingId}`)
       .then(r => r.json())
       .then(data => {
         if (data.success) {

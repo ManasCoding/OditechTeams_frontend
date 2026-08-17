@@ -16,7 +16,7 @@ export default function MemberProfileView({ memberId, groupId, setActiveNav, isA
       if (!memberId || !groupId) return;
       try {
         const token = sessionStorage.getItem('token');
-        const res = await fetch(``${API_URL}/api/groups/${groupId}/members/${memberId}`, {
+        const res = await fetch(`${API_URL}/api/groups/${groupId}/members/${memberId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -35,7 +35,7 @@ export default function MemberProfileView({ memberId, groupId, setActiveNav, isA
   const handleRemove = async () => {
     try {
       const token = sessionStorage.getItem('token');
-      const res = await fetch(``${API_URL}/api/groups/${groupId}/members/${memberId}`, {
+      const res = await fetch(`${API_URL}/api/groups/${groupId}/members/${memberId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

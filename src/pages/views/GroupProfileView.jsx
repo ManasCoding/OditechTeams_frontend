@@ -40,7 +40,7 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
       
       if (uploadData.success) {
         const token = sessionStorage.getItem('token');
-        const updateRes = await fetch(``${API_URL}/api/channels/${currentChannel._id || currentChannel.id}`, {
+        const updateRes = await fetch(`${API_URL}/api/channels/${currentChannel._id || currentChannel.id}`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',

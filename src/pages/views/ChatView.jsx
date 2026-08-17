@@ -69,8 +69,8 @@ export default function ChatView() {
     const loadData = async () => {
       try {
         const [convRes, usersRes] = await Promise.all([
-          fetch(``${API_URL}/api/conversations?userId=${currentUserId}`),
-          fetch(``${API_URL}/api/users`)
+          fetch(`${API_URL}/api/conversations?userId=${currentUserId}`),
+          fetch(`${API_URL}/api/users`)
         ]);
         const convData = await convRes.json();
         const usersData = await usersRes.json();
@@ -236,7 +236,7 @@ export default function ChatView() {
       
       const loadMessages = async () => {
         try {
-          const res = await fetch(``${API_URL}/api/conversations/${activeChat._id}/messages`);
+          const res = await fetch(`${API_URL}/api/conversations/${activeChat._id}/messages`);
           const data = await res.json();
           if (data.success) {
             setMessages(data.messages);
@@ -423,7 +423,7 @@ export default function ChatView() {
       const data = await res.json();
       if (data.success) {
         // Fetch full populated conversation to have partner details
-        const popRes = await fetch(``${API_URL}/api/conversations?userId=${currentUserId}`);
+        const popRes = await fetch(`${API_URL}/api/conversations?userId=${currentUserId}`);
         const popData = await popRes.json();
         if (popData.success) {
           setConversations(popData.conversations);
@@ -441,7 +441,7 @@ export default function ChatView() {
     e.stopPropagation();
     if (!window.confirm("Are you sure you want to delete this chat?")) return;
     try {
-      const res = await fetch(``${API_URL}/api/conversations/${chatId}`, {
+      const res = await fetch(`${API_URL}/api/conversations/${chatId}`, {
         method: 'DELETE'
       });
       const data = await res.json();
