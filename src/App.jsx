@@ -85,11 +85,11 @@ function LoginPage() {
     >
       <div className="relative flex w-full min-h-screen overflow-hidden max-w-[1920px] mx-auto">
 
-        {/* ─── IMAGE / INFO PANEL (Slides left & right) ─── */}
+        {/* ─── IMAGE / INFO PANEL (Sits on right, slides left in admin mode) ─── */}
         <div 
-          className={`hidden lg:flex absolute top-0 bottom-0 w-1/2 transition-transform duration-1000 ease-[cubic-bezier(0.87,0,0.13,1)] z-20 flex-col items-center justify-center shadow-2xl ${isAdminMode ? 'translate-x-0' : 'translate-x-full'}`}
+          className={`hidden lg:flex absolute top-0 bottom-0 right-0 w-1/2 transition-transform duration-1000 ease-[cubic-bezier(0.87,0,0.13,1)] z-20 flex-col items-center justify-center shadow-2xl ${isAdminMode ? '-translate-x-full' : 'translate-x-0'}`}
         >
-          {/* Base background covers opposite side */}
+          {/* User mode background */}
           <div className="absolute inset-0 bg-[#F4F2FF] transition-opacity duration-1000" style={{ opacity: isAdminMode ? 0 : 1 }}>
              <div className="absolute top-[-5%] right-[-10%] w-[800px] h-[800px] bg-gradient-to-br from-white/60 to-transparent rounded-full mix-blend-overlay filter blur-[80px] opacity-70 transform -rotate-12"></div>
              <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-tr from-[#E0DCFF] to-transparent rounded-full mix-blend-multiply filter blur-[60px] opacity-60"></div>
@@ -108,42 +108,44 @@ function LoginPage() {
           </div>
 
           {/* User Mode Image */}
-          <div className={`relative z-10 w-full h-full flex items-center justify-center p-8 transition-all duration-700 absolute inset-0 ${isAdminMode ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100 scale-100 delay-300'}`}>
+          <div className={`absolute inset-0 z-10 flex items-center justify-center p-8 transition-all duration-700 ${isAdminMode ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100 scale-100 delay-300'}`}>
             <img 
               src="/illustration.png" 
               alt="3D illustration of people working" 
-              className="max-w-full max-h-full object-contain drop-shadow-2xl"
+              className="w-full h-full object-contain drop-shadow-2xl"
             />
           </div>
 
           {/* Admin Mode Info */}
-          <div className={`relative z-10 max-w-md text-center transition-all duration-700 absolute ${isAdminMode ? 'opacity-100 scale-100 delay-300' : 'opacity-0 scale-90 pointer-events-none'}`}>
-             <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-brand-purple to-blue-500 flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-purple-900">
-               <Shield size={44} className="text-white" />
-             </div>
-             <h2 className="text-4xl font-extrabold text-white mb-4 leading-tight">
-               Admin Control<br />
-               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-blue-300">
-                 Center
-               </span>
-             </h2>
-             <p className="text-purple-200/70 text-base leading-relaxed mb-10">
-               Secure access to the OditechTeams administration panel. Manage users, roles, system health and more.
-             </p>
-             <div className="flex flex-wrap gap-3 justify-center">
-               {['User Management', 'Role Control', 'System Monitor', 'Audit Logs'].map(f => (
-                 <span key={f} className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/10 border border-white/10 text-purple-200 text-xs font-semibold rounded-full backdrop-blur-sm">
-                   <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-                   {f}
+          <div className={`absolute inset-0 z-10 flex items-center justify-center p-10 transition-all duration-700 ${isAdminMode ? 'opacity-100 scale-100 delay-300' : 'opacity-0 scale-90 pointer-events-none'}`}>
+            <div className="max-w-md text-center">
+               <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-brand-purple to-blue-500 flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-purple-900">
+                 <Shield size={44} className="text-white" />
+               </div>
+               <h2 className="text-4xl font-extrabold text-white mb-4 leading-tight">
+                 Admin Control<br />
+                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-blue-300">
+                   Center
                  </span>
-               ))}
-             </div>
+               </h2>
+               <p className="text-purple-200/70 text-base leading-relaxed mb-10">
+                 Secure access to the OditechTeams administration panel. Manage users, roles, system health and more.
+               </p>
+               <div className="flex flex-wrap gap-3 justify-center">
+                 {['User Management', 'Role Control', 'System Monitor', 'Audit Logs'].map(f => (
+                   <span key={f} className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/10 border border-white/10 text-purple-200 text-xs font-semibold rounded-full backdrop-blur-sm">
+                     <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
+                     {f}
+                   </span>
+                 ))}
+               </div>
+            </div>
           </div>
         </div>
 
-        {/* ─── FORMS PANEL (Slides right & left) ─── */}
+        {/* ─── FORMS PANEL (Left half normally, slides to right half in admin mode) ─── */}
         <div 
-          className={`absolute top-0 bottom-0 w-full lg:w-1/2 transition-transform duration-1000 ease-[cubic-bezier(0.87,0,0.13,1)] z-10 flex flex-col items-center justify-center ${isAdminMode ? 'translate-x-0 lg:translate-x-full' : 'translate-x-0'}`}
+          className={`absolute top-0 bottom-0 left-0 w-full lg:w-1/2 transition-transform duration-1000 ease-[cubic-bezier(0.87,0,0.13,1)] z-10 flex flex-col items-center justify-center ${isAdminMode ? 'lg:translate-x-full' : 'translate-x-0'}`}
         >
 
           {/* --- User Login Form --- */}
