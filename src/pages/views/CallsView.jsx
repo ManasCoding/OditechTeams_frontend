@@ -1,4 +1,4 @@
-import API_URL from '../../../../../../../../../api';
+import API_URL from '../../api';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Phone, PhoneIncoming, PhoneMissed, PhoneOff, Search, Video, Clock, ChevronRight, Plus, RefreshCw } from 'lucide-react';
 import { socket } from '../../socket';

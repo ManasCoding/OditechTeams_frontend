@@ -1,4 +1,4 @@
-import API_URL from '../../../../../../../../../api';
+import API_URL from '../../api';
 import React, { useState, useEffect } from 'react';
 import { Search, UserPlus } from 'lucide-react';
 

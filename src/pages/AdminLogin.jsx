@@ -1,4 +1,4 @@
-import API_URL from '../../../../../../../../api';
+import API_URL from '../api';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Shield, ArrowLeft, Lock, Mail, AlertCircle } from 'lucide-react';

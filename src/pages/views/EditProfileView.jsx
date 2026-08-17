@@ -1,4 +1,4 @@
-import API_URL from '../../../../../../../../../api';
+import API_URL from '../../api';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Save, ArrowLeft, Camera, Upload, CheckCircle, AlertCircle } from 'lucide-react';
