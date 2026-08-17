@@ -1,3 +1,4 @@
+import API_URL from '../../../../../../../../api';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -119,7 +120,7 @@ export default function Dashboard() {
       const token = sessionStorage.getItem('token');
       if (!token) return;
       
-      const res = await fetch('http://localhost:5000/api/profile', {
+      const res = await fetch(`${API_URL}/api/profile`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -176,8 +177,8 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         const [statsRes, recentRes] = await Promise.all([
-          fetch('http://localhost:5000/api/stats'),
-          fetch('http://localhost:5000/api/users/recent')
+          fetch(`${API_URL}/api/stats`),
+          fetch(`${API_URL}/api/users/recent`)
         ]);
         const statsData = await statsRes.json();
         const recentData = await recentRes.json();

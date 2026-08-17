@@ -1,3 +1,4 @@
+import API_URL from '../../../../../../../../../api';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import ProfileHeader from '../../components/profile/ProfileHeader';
@@ -12,7 +13,7 @@ export default function ProfileView({ loggedInUser, setActiveNav }) {
     const fetchProfile = async () => {
       try {
         const token = sessionStorage.getItem('token');
-        const res = await fetch('http://localhost:5000/api/profile', {
+        const res = await fetch(`${API_URL}/api/profile`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();

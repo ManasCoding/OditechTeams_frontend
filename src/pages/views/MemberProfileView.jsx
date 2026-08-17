@@ -1,3 +1,4 @@
+import API_URL from '../../../../../../../../../api';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MessageSquare, Phone, Video } from 'lucide-react';

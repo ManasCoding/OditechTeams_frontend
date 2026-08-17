@@ -1,3 +1,4 @@
+import API_URL from '../../../../../../../../../api';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Send, Smile, Paperclip, Video, Phone, Check, CheckCheck, MoreVertical, Search as SearchIcon, Mic, Lock, MessageSquare, Trash2 } from 'lucide-react';
 import { socket } from '../../socket';
@@ -411,7 +412,7 @@ export default function ChatView() {
     }
     
     try {
-      const res = await fetch('http://localhost:5000/api/conversations', {
+      const res = await fetch(`${API_URL}/api/conversations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

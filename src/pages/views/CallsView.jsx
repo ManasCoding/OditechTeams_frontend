@@ -1,3 +1,4 @@
+import API_URL from '../../../../../../../../../api';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Phone, PhoneIncoming, PhoneMissed, PhoneOff, Search, Video, Clock, ChevronRight, Plus, RefreshCw } from 'lucide-react';
 import { socket } from '../../socket';
@@ -230,9 +231,9 @@ export default function CallsView() {
     setLoading(true); setError(false);
     try {
       const [callsRes, usersRes, statsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/calls'),
-        fetch('http://localhost:5000/api/users'),
-        fetch('http://localhost:5000/api/stats'),
+        fetch(`${API_URL}/api/calls`),
+        fetch(`${API_URL}/api/users`),
+        fetch(`${API_URL}/api/stats`),
       ]);
       const callsData = await callsRes.json();
       const usersData = await usersRes.json();

@@ -1,3 +1,4 @@
+import API_URL from '../../../../../../../../../api';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -31,7 +32,7 @@ export default function MeetingsView({ isAdmin }) {
   const [newAttendees, setNewAttendees] = useState(''); // Just a placeholder for now
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/meetings')
+    fetch(`${API_URL}/api/meetings`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -73,7 +74,7 @@ export default function MeetingsView({ isAdmin }) {
         duration: newDuration
       };
       
-      const res = await fetch('http://localhost:5000/api/meetings', {
+      const res = await fetch(`${API_URL}/api/meetings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

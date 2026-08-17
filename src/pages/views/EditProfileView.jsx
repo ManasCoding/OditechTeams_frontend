@@ -1,3 +1,4 @@
+import API_URL from '../../../../../../../../../api';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Save, ArrowLeft, Camera, Upload, CheckCircle, AlertCircle } from 'lucide-react';
@@ -20,7 +21,7 @@ export default function EditProfileView({ setActiveNav, loggedInUser }) {
     const fetchProfile = async () => {
       try {
         const token = sessionStorage.getItem('token');
-        const res = await fetch('http://localhost:5000/api/profile', {
+        const res = await fetch(`${API_URL}/api/profile`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -55,7 +56,7 @@ export default function EditProfileView({ setActiveNav, loggedInUser }) {
 
     try {
       const token = sessionStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/upload', {
+      const res = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: uploadData
@@ -88,7 +89,7 @@ export default function EditProfileView({ setActiveNav, loggedInUser }) {
         setSaving(false);
         return;
       }
-      const res = await fetch('http://localhost:5000/api/profile', {
+      const res = await fetch(`${API_URL}/api/profile`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',

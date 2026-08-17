@@ -1,3 +1,4 @@
+import API_URL from '../../../../../../../../../api';
 import React, { useState, useEffect, useRef } from 'react';
 import { Hash, Search, Plus, Send, Smile, Paperclip, AtSign, Bold, Pin, Users, FileText, X, Upload, Trash2, UserMinus } from 'lucide-react';
 import { socket } from '../../socket';
@@ -71,7 +72,7 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
       setUserSearch('');
       setSelectedUser(null);
       setAddUserStatus('');
-      fetch('http://localhost:5000/api/users')
+      fetch(`${API_URL}/api/users`)
         .then(r => r.json())
         .then(data => { if (data.success) setAllUsers(data.users); })
         .catch(err => console.error('Failed to fetch users:', err));
@@ -217,7 +218,7 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
 
   const fetchChannels = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/channels');
+      const res = await fetch(`${API_URL}/api/channels`);
       const data = await res.json();
       if (data.success) {
         setChannelList(data.channels);
@@ -239,7 +240,7 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
       if (newChannelAvatar) {
         const formData = new FormData();
         formData.append('file', newChannelAvatar);
-        const uploadRes = await fetch('http://localhost:5000/api/upload', {
+        const uploadRes = await fetch(`${API_URL}/api/upload`, {
           method: 'POST',
           body: formData
         });
@@ -249,7 +250,7 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
         }
       }
 
-      const res = await fetch('http://localhost:5000/api/channels', {
+      const res = await fetch(`${API_URL}/api/channels`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newChannelName.trim(), description: newChannelDesc.trim(), avatar: avatarUrl })

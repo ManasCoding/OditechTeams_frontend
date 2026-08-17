@@ -1,3 +1,4 @@
+import API_URL from '../../../../../../../../../api';
 import React, { useState, useEffect } from 'react';
 import { Search, Download, Plus, Filter, Edit2, MoreVertical, Users, UserCheck, UserX, UserPlus, ArrowLeft, Upload } from 'lucide-react';
 
@@ -37,7 +38,7 @@ export default function UserManagementView({ isAdmin }) {
 
   const handleCreateUser = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/users', {
+      const res = await fetch(`${API_URL}/api/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -60,7 +61,7 @@ export default function UserManagementView({ isAdmin }) {
     setLoading(true);
     setFetchError(false);
     try {
-      const res = await fetch('http://localhost:5000/api/users');
+      const res = await fetch(`${API_URL}/api/users`);
       const data = await res.json();
       if (data.success) {
         setUsers(data.users);

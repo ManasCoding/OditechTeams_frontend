@@ -1,3 +1,4 @@
+import API_URL from '../../../../../../../../../api';
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Users, Calendar, Hash, Camera } from 'lucide-react';
@@ -31,7 +32,7 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
       const formData = new FormData();
       formData.append('file', file);
       
-      const uploadRes = await fetch('http://localhost:5000/api/upload', {
+      const uploadRes = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
         body: formData
       });
