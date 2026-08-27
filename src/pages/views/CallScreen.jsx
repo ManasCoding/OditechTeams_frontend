@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getMediaUrl } from '../../api';
 import {
   PhoneOff, Mic, MicOff, Video, VideoOff, Volume2, VolumeX,
   Maximize, Minimize, RotateCcw, PhoneCall
@@ -146,8 +147,8 @@ export default function CallScreen({
                   : '0 0 30px rgba(139,117,245,0.3)',
               }}
             >
-              {partnerInfo?.avatar
-                ? <img src={partnerInfo.avatar} alt={partnerName} className="w-full h-full object-cover" />
+              {getMediaUrl(partnerInfo?.avatar)
+                ? <img src={getMediaUrl(partnerInfo.avatar)} alt={partnerName} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 : initials
               }
             </div>

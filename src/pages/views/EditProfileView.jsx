@@ -1,4 +1,4 @@
-import API_URL from '../../api';
+import API_URL, { getMediaUrl } from '../../api';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Save, ArrowLeft, Camera, Upload, CheckCircle, AlertCircle } from 'lucide-react';
@@ -173,8 +173,8 @@ export default function EditProfileView({ setActiveNav, loggedInUser }) {
                 <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center overflow-hidden border-2 border-white shadow-md">
                   {uploadingAvatar ? (
                     <div className="w-8 h-8 border-4 border-brand-purple border-t-transparent rounded-full animate-spin"></div>
-                  ) : formData.avatar ? (
-                    <img src={formData.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : getMediaUrl(formData.avatar) ? (
+                    <img src={getMediaUrl(formData.avatar)} alt="Avatar" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                   ) : (
                     <span className="text-2xl font-bold text-gray-400">
                       {formData.fullName.charAt(0).toUpperCase()}

@@ -1,4 +1,4 @@
-import API_URL from '../../api';
+import API_URL, { getMediaUrl } from '../../api';
 import React, { useState, useEffect, useRef } from 'react';
 import { Hash, Search, Plus, Send, Smile, Paperclip, AtSign, Bold, Pin, Users, FileText, X, Upload, Trash2, UserMinus } from 'lucide-react';
 import { socket } from '../../socket';
@@ -337,9 +337,9 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
               }`}
             >
               <div className="flex items-center gap-2">
-                {c.avatar ? (
+                {getMediaUrl(c.avatar) ? (
                   <div className="w-6 h-6 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 shadow-sm border border-gray-200/50">
-                    <img src={c.avatar} alt={c.name} className="w-full h-full object-cover" />
+                    <img src={getMediaUrl(c.avatar)} alt={c.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                   </div>
                 ) : (
                   <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 text-[10px] font-bold shadow-sm border ${
@@ -377,9 +377,9 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
       <div className="flex-1 flex flex-col min-w-0">
         {/* Channel Header */}
         <div className="bg-white border-b border-gray-100 px-5 py-3.5 flex items-center gap-3 flex-shrink-0">
-          {ch?.avatar ? (
+          {getMediaUrl(ch?.avatar) ? (
             <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 shadow-sm border border-gray-200/50">
-              <img src={ch.avatar} alt={ch.name} className="w-full h-full object-cover" />
+              <img src={getMediaUrl(ch.avatar)} alt={ch.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             </div>
           ) : (
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white font-bold shadow-sm flex-shrink-0 text-sm">
@@ -425,8 +425,8 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
           {!loadingMessages && channelMessages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 text-brand-purple overflow-hidden shadow-md border border-gray-200/50">
-                {ch?.avatar ? (
-                  <img src={ch.avatar} alt={ch.name} className="w-full h-full object-cover" />
+                {getMediaUrl(ch?.avatar) ? (
+                  <img src={getMediaUrl(ch.avatar)} alt={ch.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white font-bold text-2xl">
                     {ch?.name?.charAt(0).toUpperCase()}
@@ -468,8 +468,8 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
                   <div className="w-8 flex-shrink-0 flex flex-col justify-end">
                     {isFirstInGroup && (
                       <div className={`w-8 h-8 rounded-full ${colors[colorIdx]} flex items-center justify-center text-white text-[10px] font-bold shadow-sm overflow-hidden border border-white/60`}>
-                        {authorAvatar ? (
-                          <img src={authorAvatar} alt={msg.author} className="w-full h-full object-cover" />
+                        {getMediaUrl(authorAvatar) ? (
+                          <img src={getMediaUrl(authorAvatar)} alt={msg.author} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                         ) : (
                           authorInitials
                         )}
@@ -551,9 +551,9 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
         <div className="p-4 border-b border-gray-100">
           <h3 className="text-sm font-bold text-gray-900 mb-1">Channel info</h3>
           <div className="flex items-center gap-2 text-gray-900 font-bold text-sm mt-2">
-            {ch?.avatar ? (
+            {getMediaUrl(ch?.avatar) ? (
               <div className="w-5 h-5 rounded overflow-hidden flex-shrink-0 bg-gray-100 shadow-sm border border-gray-200/50">
-                <img src={ch.avatar} alt={ch.name} className="w-full h-full object-cover" />
+                <img src={getMediaUrl(ch.avatar)} alt={ch.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               </div>
             ) : (
               <div className="w-5 h-5 rounded bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white font-bold flex-shrink-0 text-[9px]">
@@ -574,7 +574,7 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
           className="p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors flex items-center gap-3 group"
         >
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white font-bold shadow-sm group-hover:scale-105 transition-transform overflow-hidden">
-            {ch?.avatar ? <img src={ch.avatar} alt="Avatar" className="w-full h-full object-cover" /> : ch?.name?.charAt(0).toUpperCase()}
+            {getMediaUrl(ch?.avatar) ? <img src={getMediaUrl(ch.avatar)} alt="Avatar" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> : ch?.name?.charAt(0).toUpperCase()}
           </div>
           <div>
             <h4 className="text-sm font-bold text-gray-900 group-hover:text-brand-purple transition-colors">Group Profile</h4>

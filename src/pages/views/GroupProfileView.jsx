@@ -1,4 +1,4 @@
-import API_URL from '../../api';
+import API_URL, { getMediaUrl } from '../../api';
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Users, Calendar, Hash, Camera } from 'lucide-react';
@@ -83,8 +83,8 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
             className="w-32 h-32 mx-auto rounded-3xl bg-gradient-to-br from-teal-400 to-emerald-500 p-1 shadow-xl mb-6 rotate-3 group"
           >
             <div className="w-full h-full rounded-[20px] bg-white flex items-center justify-center -rotate-3 overflow-hidden border-4 border-white relative">
-              {currentChannel.avatar ? (
-                <img src={currentChannel.avatar} alt="Avatar" className="w-full h-full object-cover" />
+              {getMediaUrl(currentChannel.avatar) ? (
+                <img src={getMediaUrl(currentChannel.avatar)} alt="Avatar" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               ) : (
                 <span className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-teal-400 to-emerald-600">
                   {initials}

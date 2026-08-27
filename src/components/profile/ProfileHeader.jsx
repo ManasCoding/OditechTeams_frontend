@@ -1,10 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Building, Briefcase, Mail, Phone, Calendar } from 'lucide-react';
+import { getMediaUrl } from '../../api';
 
 export default function ProfileHeader({ user, isOwnProfile, onEdit }) {
   const initials = user?.fullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
   const roleDisplay = (user?.role || 'member').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const avatarUrl = getMediaUrl(user?.avatar);
 
   return (
     <div className="bg-white/70 backdrop-blur-xl rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 relative overflow-hidden">
@@ -21,8 +23,13 @@ export default function ProfileHeader({ user, isOwnProfile, onEdit }) {
         >
           <div className="w-32 h-32 rounded-full bg-gradient-to-br from-brand-purple to-blue-600 p-1 shadow-xl">
             <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden border-4 border-white">
-              {user?.avatar ? (
-                <img src={user.avatar} alt={user.fullName} className="w-full h-full object-cover" />
+              {avatarUrl ? (
+                <img 
+                  src={avatarUrl} 
+                  alt={user?.fullName} 
+                  className="w-full h-full object-cover" 
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
               ) : (
                 <span className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-brand-purple to-blue-600">
                   {initials}

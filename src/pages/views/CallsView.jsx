@@ -1,4 +1,4 @@
-import API_URL from '../../api';
+import API_URL, { getMediaUrl } from '../../api';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Phone, PhoneIncoming, PhoneMissed, PhoneOff, Search, Video, Clock, ChevronRight, Plus, RefreshCw } from 'lucide-react';
 import { socket } from '../../socket';
@@ -387,8 +387,8 @@ export default function CallsView() {
                 return (
                   <div key={call._id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50/50 transition-colors group">
                     <div className={`w-10 h-10 rounded-full ${color} flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden`}>
-                      {otherPerson?.avatar
-                        ? <img src={otherPerson.avatar} alt={name} className="w-full h-full object-cover" />
+                      {getMediaUrl(otherPerson?.avatar)
+                        ? <img src={getMediaUrl(otherPerson.avatar)} alt={name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                         : initials
                       }
                     </div>
@@ -454,8 +454,8 @@ export default function CallsView() {
                   <div key={c._id || i} className="flex items-center gap-3 group">
                     <div className="relative flex-shrink-0">
                       <div className={`w-9 h-9 rounded-full ${color} flex items-center justify-center text-white text-xs font-bold overflow-hidden`}>
-                        {c.avatar
-                          ? <img src={c.avatar} alt={c.fullName} className="w-full h-full object-cover" />
+                        {getMediaUrl(c.avatar)
+                          ? <img src={getMediaUrl(c.avatar)} alt={c.fullName} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                           : initials
                         }
                       </div>
@@ -494,8 +494,8 @@ export default function CallsView() {
               <p className="text-xs font-semibold opacity-70 mb-3 uppercase tracking-wider">On a call</p>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
-                  {activeCall.callerId?.avatar
-                    ? <img src={activeCall.callerId.avatar} alt={activeCall.callerId.fullName} className="w-full h-full object-cover" />
+                  {getMediaUrl(activeCall.callerId?.avatar)
+                    ? <img src={getMediaUrl(activeCall.callerId.avatar)} alt={activeCall.callerId.fullName} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                     : getInitials(activeCall.callerId?.fullName || 'U')
                   }
                 </div>

@@ -1,4 +1,4 @@
-import API_URL from '../../api';
+import API_URL, { getMediaUrl } from '../../api';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Send, Smile, Paperclip, Video, Phone, Check, CheckCheck, MoreVertical, Search as SearchIcon, Mic, Lock, MessageSquare, Trash2 } from 'lucide-react';
 import { socket } from '../../socket';
@@ -553,8 +553,8 @@ export default function ChatView() {
                           ? 'bg-gradient-to-br from-violet-500 to-purple-600 ring-2 ring-violet-400 ring-offset-1'
                           : 'bg-gradient-to-br from-violet-400 to-indigo-500'
                       )}>
-                        {u.avatar
-                          ? <img src={u.avatar} alt={u.fullName} className="w-full h-full object-cover" />
+                        {getMediaUrl(u.avatar)
+                          ? <img src={getMediaUrl(u.avatar)} alt={u.fullName} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                           : initials
                         }
                       </div>
@@ -581,7 +581,7 @@ export default function ChatView() {
         </div>
       </div>
 
-      {/* â”€â”€ Main Chat Area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ———————————————————————————————— */}
       <div className="flex-1 flex flex-col relative overflow-hidden bg-[#e5e5e5] bg-opacity-60 bg-[radial-gradient(#d4d4d4_1px,transparent_1px)] [background-size:20px_20px]">
         <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px]" />
 
@@ -593,8 +593,8 @@ export default function ChatView() {
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold shadow-md overflow-hidden">
                   {activeChat.isGroup
                     ? activeChat.name[0]
-                    : activePartner?.avatar
-                      ? <img src={activePartner.avatar} alt={activePartner.fullName} className="w-full h-full object-cover" />
+                    : getMediaUrl(activePartner?.avatar)
+                      ? <img src={getMediaUrl(activePartner.avatar)} alt={activePartner.fullName} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                       : partnerInitials
                   }
                 </div>
@@ -610,7 +610,7 @@ export default function ChatView() {
                   {activeChat.isGroup
                     ? `${activeChat.participants.length} members`
                     : activePartner?.isOnline
-                      ? <span className="text-green-500 font-medium">â— online</span>
+                      ? <span className="text-green-500 font-medium">• online</span>
                       : `last seen ${activePartner?.lastSeen ? formatDistanceToNow(new Date(activePartner.lastSeen)) + ' ago' : 'recently'}`
                   }
                 </p>
@@ -639,8 +639,8 @@ export default function ChatView() {
                     <div key={msg._id} className={cn('flex gap-2 max-w-[75%]', isMe ? 'ml-auto flex-row-reverse' : 'mr-auto')}>
                       {showAvatar && (
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold mt-auto overflow-hidden">
-                          {msg.senderId?.avatar
-                            ? <img src={msg.senderId.avatar} alt={msg.senderId.fullName} className="w-full h-full object-cover" />
+                          {getMediaUrl(msg.senderId?.avatar)
+                            ? <img src={getMediaUrl(msg.senderId.avatar)} alt={msg.senderId.fullName} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                             : msg.senderId?.fullName?.[0]?.toUpperCase() || '?'
                           }
                         </div>
@@ -692,7 +692,7 @@ export default function ChatView() {
                 </button>
                 <input
                   type="text"
-                  placeholder={`Message ${activePartner?.fullName || 'group'}â€¦`}
+                  placeholder={`Message ${activePartner?.fullName || 'group'}…`}
                   value={messageInput}
                   onChange={handleTyping}
                   onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
@@ -727,14 +727,14 @@ export default function ChatView() {
         )}
       </div>
 
-      {/* —————————————————————————————————————————— */}
+      {/* ———————————————————————————————— */}
       {activeChat && activePartner && (
         <div className="w-60 bg-white border-l border-gray-100 flex-shrink-0 overflow-y-auto">
           {/* Profile Card */}
           <div className="p-5 border-b border-gray-100 flex flex-col items-center text-center">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg mb-3 overflow-hidden">
-              {activePartner?.avatar
-                ? <img src={activePartner.avatar} alt={activePartner.fullName} className="w-full h-full object-cover" />
+              {getMediaUrl(activePartner?.avatar)
+                ? <img src={getMediaUrl(activePartner.avatar)} alt={activePartner.fullName} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 : partnerInitials
               }
             </div>

@@ -1,4 +1,4 @@
-import API_URL from '../../api';
+import API_URL, { getMediaUrl } from '../../api';
 import React, { useState, useEffect } from 'react';
 import { Search, Download, Plus, Filter, Edit2, MoreVertical, Users, UserCheck, UserX, UserPlus, ArrowLeft, Upload } from 'lucide-react';
 
@@ -347,8 +347,12 @@ export default function UserManagementView({ isAdmin }) {
                   <tr key={user._id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full ${color} flex items-center justify-center text-white text-sm font-bold flex-shrink-0`}>
-                          {initials}
+                        <div className={`w-10 h-10 rounded-full ${color} flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden`}>
+                          {getMediaUrl(user.avatar) ? (
+                            <img src={getMediaUrl(user.avatar)} alt={user.fullName} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                          ) : (
+                            initials
+                          )}
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-gray-900">{user.fullName}</p>

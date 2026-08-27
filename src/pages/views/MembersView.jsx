@@ -1,4 +1,4 @@
-import API_URL from '../../api';
+import API_URL, { getMediaUrl } from '../../api';
 import React, { useState, useEffect } from 'react';
 import { Search, UserPlus } from 'lucide-react';
 
@@ -105,8 +105,12 @@ export default function MembersView() {
                   >
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-full ${color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
-                          {initials}
+                        <div className={`w-9 h-9 rounded-full ${color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden`}>
+                          {getMediaUrl(user.avatar) ? (
+                            <img src={getMediaUrl(user.avatar)} alt={user.fullName} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                          ) : (
+                            initials
+                          )}
                         </div>
                         <span className="text-sm font-semibold text-gray-800">{user.fullName}</span>
                       </div>

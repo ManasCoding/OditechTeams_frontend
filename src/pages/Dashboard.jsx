@@ -1,4 +1,4 @@
-import API_URL from '../api';
+import API_URL, { getMediaUrl } from '../api';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -306,8 +306,8 @@ export default function Dashboard() {
             className="flex items-center gap-2 px-2 py-2 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
           >
             <div className="w-8 h-8 rounded-full bg-brand-purple flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden">
-              {loggedInUser.avatar
-                ? <img src={loggedInUser.avatar} alt={displayName} className="w-full h-full object-cover" />
+              {getMediaUrl(loggedInUser.avatar)
+                ? <img src={getMediaUrl(loggedInUser.avatar)} alt={displayName} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 : initials
               }
             </div>
@@ -369,8 +369,8 @@ export default function Dashboard() {
             className="flex items-center gap-2 cursor-pointer group"
           >
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-purple to-blue-500 flex items-center justify-center text-white text-xs font-bold overflow-hidden shadow-sm">
-              {loggedInUser.avatar ? (
-                <img src={loggedInUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
+              {getMediaUrl(loggedInUser.avatar) ? (
+                <img src={getMediaUrl(loggedInUser.avatar)} alt="Avatar" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               ) : (
                 initials
               )}
@@ -459,8 +459,8 @@ export default function Dashboard() {
                 {recentActivity.map((item) => (
                   <div key={item.id} className="flex items-center gap-3">
                     <div className={`w-9 h-9 rounded-full ${item.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden`}>
-                      {item.avatar
-                        ? <img src={item.avatar} alt={item.name} className="w-full h-full object-cover" />
+                      {getMediaUrl(item.avatar)
+                        ? <img src={getMediaUrl(item.avatar)} alt={item.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                         : item.initials
                       }
                     </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ExternalLink } from 'lucide-react';
+import { getMediaUrl } from '../../api';
 
 export default function MemberCard({ member, onClick }) {
   const [imgOpen, setImgOpen] = useState(false);
@@ -15,7 +16,8 @@ export default function MemberCard({ member, onClick }) {
   const roleDisplay = roleRaw.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   const designation = typeof member === 'object' ? (member?.designation || member?.department || member?.bio || 'Team Member') : 'Team Member';
   const isOnline = typeof member === 'object' ? (member?.isOnline ?? true) : true;
-  const avatarUrl = typeof member === 'object' ? member?.avatar : null;
+  const rawAvatar = typeof member === 'object' ? member?.avatar : null;
+  const avatarUrl = getMediaUrl(rawAvatar);
 
   return (
     <>
@@ -36,7 +38,12 @@ export default function MemberCard({ member, onClick }) {
         >
           <div className="w-11 h-11 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm overflow-hidden bg-gradient-to-tr from-[#3b82f6] to-[#6366f1] ring-2 ring-purple-100">
             {avatarUrl ? (
-              <img src={avatarUrl} alt={fullName} className="w-full h-full object-cover" />
+              <img 
+                src={avatarUrl} 
+                alt={fullName} 
+                className="w-full h-full object-cover" 
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
             ) : (
               <span>{initials}</span>
             )}

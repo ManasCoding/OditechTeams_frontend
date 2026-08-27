@@ -1,4 +1,5 @@
 import React from 'react';
+import { getMediaUrl } from '../../api';
 
 export default function AvatarStack({ members = [], totalCount, maxVisible = 6 }) {
   const total = totalCount !== undefined ? totalCount : members.length;
@@ -25,7 +26,8 @@ export default function AvatarStack({ members = [], totalCount, maxVisible = 6 }
         {visibleMembers.map((m, i) => {
           const init = getInitials(m);
           const name = typeof m === 'object' ? m.fullName : m;
-          const avatarUrl = typeof m === 'object' ? m.avatar : null;
+          const rawAvatar = typeof m === 'object' ? m.avatar : null;
+          const avatarUrl = getMediaUrl(rawAvatar);
 
           return (
             <div
@@ -34,7 +36,12 @@ export default function AvatarStack({ members = [], totalCount, maxVisible = 6 }
               title={name}
             >
               {avatarUrl ? (
-                <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+                <img 
+                  src={avatarUrl} 
+                  alt={name} 
+                  className="w-full h-full object-cover" 
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
               ) : (
                 <span>{init}</span>
               )}
