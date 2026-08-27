@@ -1,5 +1,5 @@
 import API_URL, { getMediaUrl } from '../../api';
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, Camera, Edit3, Calendar, FileText, Users, UserCheck, 
@@ -21,10 +21,39 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
   }
 
   const [currentChannel, setCurrentChannel] = useState(channel);
+  const [allUsersMap, setAllUsersMap] = useState({});
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Fetch populated channel & all users lookup map on mount
+  useEffect(() => {
+    const channelId = channel._id || channel.id;
+    if (channelId) {
+      fetch(`${API_URL}/api/channels/${channelId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.success && data.channel) {
+            setCurrentChannel(data.channel);
+          }
+        })
+        .catch(err => console.error('Failed to fetch single channel:', err));
+    }
+
+    fetch(`${API_URL}/api/users`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.users)) {
+          const map = {};
+          data.users.forEach(u => {
+            map[String(u._id || u.id)] = u;
+          });
+          setAllUsersMap(map);
+        }
+      })
+      .catch(err => console.error('Failed to fetch users:', err));
+  }, [channel?._id, channel?.id]);
 
   // Group Info state for edit
   const [editName, setEditName] = useState(currentChannel.name || '');
@@ -63,9 +92,20 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
 
   const groupLink = `${window.location.origin}/group/${currentChannel.name?.toLowerCase().replace(/\s+/g, '') || 'group'}`;
 
-  const membersList = currentChannel.members || [];
-  const adminsCount = membersList.filter(m => 
-    typeof m === 'object' && ['admin', 'super_admin', 'Admin', 'Super Admin'].includes(m.role)
+  const rawMembersList = currentChannel.members || [];
+  
+  // Resolve member object from map if string ID
+  const resolveMember = (m) => {
+    if (typeof m === 'object' && m?.fullName) return m;
+    const id = typeof m === 'object' ? (m._id || m.id) : m;
+    const found = allUsersMap[String(id)];
+    if (found) return found;
+    return { fullName: 'Member', role: 'Member', designation: 'Team Member' };
+  };
+
+  const resolvedMembers = rawMembersList.map(resolveMember);
+  const adminsCount = resolvedMembers.filter(m => 
+    ['admin', 'super_admin', 'Admin', 'Super Admin'].includes(m.role)
   ).length || 1;
 
   // Handle Avatar Upload
@@ -660,13 +700,13 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
 
           {/* Members Grid (2 Columns) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {membersList.map((m, i) => {
-              const name = typeof m === 'object' ? m.fullName : m;
-              const roleRaw = typeof m === 'object' ? (m.role || 'Member') : 'Member';
+            {resolvedMembers.map((m, i) => {
+              const name = m.fullName || 'Member';
+              const roleRaw = m.role || 'Member';
               const roleDisplay = roleRaw.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-              const designation = typeof m === 'object' ? (m.designation || m.department || 'web developer') : 'Team Member';
-              const avatarUrl = typeof m === 'object' ? m.avatar : null;
-              const isOnline = typeof m === 'object' ? (m.isOnline ?? false) : false;
+              const designation = m.designation || m.department || 'Team Member';
+              const avatarUrl = m.avatar || null;
+              const isOnline = m.isOnline ?? false;
               const initials = name ? name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U';
 
               return (
