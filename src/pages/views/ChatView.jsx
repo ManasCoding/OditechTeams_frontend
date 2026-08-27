@@ -100,9 +100,20 @@ export default function ChatView() {
         setMessages((prev) => [...prev, msg]);
         socket.emit('message_seen', { roomId: activeChatRef.current._id });
       }
-      // Update latest message in conversation list
+      // Update latest message and unreadCount in conversation list
       setConversations((prev) => 
-        prev.map(c => c._id === msg.conversationId ? { ...c, latestMessage: msg } : c)
+        prev.map(c => {
+          if (c._id === msg.conversationId) {
+            const isCurrentActive = activeChatRef.current && activeChatRef.current._id === msg.conversationId;
+            const newUnread = isCurrentActive ? 0 : (c.unreadCount || 0) + 1;
+            return {
+              ...c,
+              latestMessage: msg,
+              unreadCount: newUnread
+            };
+          }
+          return c;
+        })
       );
     });
 
@@ -523,6 +534,77 @@ export default function ChatView() {
 
         <div className="flex-1 overflow-y-auto py-2 px-2">
 
+          {/* Recent Chats Section */}
+          {filteredConversations.length > 0 && (
+            <>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 pt-2 pb-1">Recent Chats</p>
+              {filteredConversations.map(c => {
+                const partner = getChatPartner(c);
+                const isActive = activeChat?._id === c._id;
+                const name = c.isGroup ? c.name : (partner?.fullName || 'User');
+                const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
+                const latestText = c.latestMessage?.text || 'No messages yet';
+                const isOnline = !c.isGroup && partner?.isOnline;
+                
+                return (
+                  <button
+                    key={c._id}
+                    onClick={() => {
+                      setActiveChat(c);
+                      // Clear unread count for this conversation in the state
+                      setConversations(prev => prev.map(conv => {
+                        if (conv._id === c._id) {
+                          return { ...conv, unreadCount: 0 };
+                        }
+                        return conv;
+                      }));
+                      socket.emit('message_seen', { roomId: c._id });
+                    }}
+                    className={cn(
+                      'w-full text-left px-3 py-2.5 rounded-xl mb-0.5 transition-all flex items-center gap-3',
+                      isActive
+                        ? 'bg-brand-purple/10 border border-brand-purple/20'
+                        : 'hover:bg-gray-50'
+                    )}
+                  >
+                    <div className="relative flex-shrink-0">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
+                        {c.isGroup
+                          ? c.name[0]
+                          : getMediaUrl(partner?.avatar)
+                            ? <img src={getMediaUrl(partner.avatar)} alt={name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                            : initials
+                        }
+                      </div>
+                      {isOnline && (
+                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-baseline">
+                        <p className={cn('text-sm font-semibold truncate', isActive ? 'text-brand-purple' : 'text-gray-800')}>
+                          {name}
+                        </p>
+                        {c.latestMessage?.createdAt && (
+                          <span className="text-[10px] text-gray-400 font-medium">
+                            {format(new Date(c.latestMessage.createdAt), 'HH:mm')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex justify-between items-center mt-0.5">
+                        <p className="text-xs text-gray-400 truncate flex-1 pr-2">{latestText}</p>
+                        {c.unreadCount > 0 && (
+                          <span className="bg-brand-purple text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0">
+                            {c.unreadCount}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </>
+          )}
 
           {/* All Members Section */}
           {filteredAllUsers.length > 0 && (
@@ -536,7 +618,21 @@ export default function ChatView() {
                 return (
                   <button
                     key={u._id}
-                    onClick={() => !isMe && (existingConv ? setActiveChat(existingConv) : startNewChat(u))}
+                    onClick={() => {
+                      if (isMe) return;
+                      if (existingConv) {
+                        setActiveChat(existingConv);
+                        setConversations(prev => prev.map(conv => {
+                          if (conv._id === existingConv._id) {
+                            return { ...conv, unreadCount: 0 };
+                          }
+                          return conv;
+                        }));
+                        socket.emit('message_seen', { roomId: existingConv._id });
+                      } else {
+                        startNewChat(u);
+                      }
+                    }}
                     className={cn(
                       'w-full text-left px-3 py-2.5 rounded-xl mb-0.5 transition-all flex items-center gap-3',
                       isMe

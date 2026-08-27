@@ -68,7 +68,7 @@ const formatEventTime = (dateStr) => {
   }
 };
 
-export default function CalendarView({ loggedInUser }) {
+export default function CalendarView({ loggedInUser, isAdmin }) {
   const [view, setView] = useState('Month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [meetings, setMeetings] = useState([]);
@@ -135,6 +135,7 @@ export default function CalendarView({ loggedInUser }) {
   };
 
   const handleCellClick = (cellDate) => {
+    if (!isAdmin) return;
     const y = cellDate.getFullYear();
     const m = String(cellDate.getMonth() + 1).padStart(2, '0');
     const d = String(cellDate.getDate()).padStart(2, '0');
@@ -144,6 +145,7 @@ export default function CalendarView({ loggedInUser }) {
   };
 
   const handlePlusClick = () => {
+    if (!isAdmin) return;
     const today = new Date();
     const y = today.getFullYear();
     const m = String(today.getMonth() + 1).padStart(2, '0');
@@ -377,9 +379,11 @@ export default function CalendarView({ loggedInUser }) {
               ))}
             </div>
 
-            <button onClick={handlePlusClick} className="w-9 h-9 bg-brand-purple hover:bg-purple-700 text-white rounded-xl flex items-center justify-center transition-all shadow-[0_4px_14px_0_rgba(108,72,245,0.3)]">
-              <Plus size={16} />
-            </button>
+            {isAdmin && (
+              <button onClick={handlePlusClick} className="w-9 h-9 bg-brand-purple hover:bg-purple-700 text-white rounded-xl flex items-center justify-center transition-all shadow-[0_4px_14px_0_rgba(108,72,245,0.3)]">
+                <Plus size={16} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -404,8 +408,10 @@ export default function CalendarView({ loggedInUser }) {
                   <div
                     key={idx}
                     onClick={() => handleCellClick(cell.date)}
-                    className={`border-b border-r border-gray-100 p-2 cursor-pointer transition-all flex flex-col group ${
-                      !cell.isCurrentMonth ? 'bg-gray-50/40 text-gray-300' : 'bg-white hover:bg-purple-50/20'
+                    className={`border-b border-r border-gray-100 p-2 transition-all flex flex-col group ${
+                      !isAdmin ? 'cursor-default' : 'cursor-pointer hover:bg-purple-50/20'
+                    } ${
+                      !cell.isCurrentMonth ? 'bg-gray-50/40 text-gray-300' : 'bg-white'
                     }`}
                   >
                     <div className="flex justify-end mb-1 flex-shrink-0">
@@ -447,7 +453,9 @@ export default function CalendarView({ loggedInUser }) {
                   <div
                     key={idx}
                     onClick={() => handleCellClick(cell.date)}
-                    className="border-r border-b border-gray-100 p-3 hover:bg-purple-50/20 transition-all flex flex-col bg-white"
+                    className={`border-r border-b border-gray-100 p-3 transition-all flex flex-col bg-white ${
+                      !isAdmin ? 'cursor-default' : 'cursor-pointer hover:bg-purple-50/20'
+                    }`}
                   >
                     <div className="flex justify-between items-center mb-3 flex-shrink-0 border-b border-gray-50 pb-1.5">
                       <span className="text-xs font-bold text-gray-400 uppercase">{DAYS[idx]}</span>
@@ -498,12 +506,14 @@ export default function CalendarView({ loggedInUser }) {
                       {getEventsForDay(currentDate).length} scheduled event(s) for this day
                     </p>
                   </div>
-                  <button 
-                    onClick={() => handleCellClick(currentDate)}
-                    className="bg-brand-purple hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-[0_4px_14px_0_rgba(108,72,245,0.3)] flex items-center gap-1.5"
-                  >
-                    <Plus size={16} /> Schedule Event
-                  </button>
+                  {isAdmin && (
+                    <button 
+                      onClick={() => handleCellClick(currentDate)}
+                      className="bg-brand-purple hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-[0_4px_14px_0_rgba(108,72,245,0.3)] flex items-center gap-1.5"
+                    >
+                      <Plus size={16} /> Schedule Event
+                    </button>
+                  )}
                 </div>
                 
                 {getEventsForDay(currentDate).length === 0 ? (

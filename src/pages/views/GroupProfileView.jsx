@@ -358,7 +358,7 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
                 <span className="text-gray-500 font-medium flex items-center gap-2">
                   <Users size={14} className="text-gray-400" /> Members
                 </span>
-                <span className="font-bold text-gray-900">{membersList.length}</span>
+                <span className="font-bold text-gray-900">{resolvedMembers.length}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500 font-medium flex items-center gap-2">
@@ -686,7 +686,7 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-base font-bold text-gray-900">
-              Members ({membersList.length})
+              Members ({resolvedMembers.length})
             </h3>
             {isAdmin && (
               <button 

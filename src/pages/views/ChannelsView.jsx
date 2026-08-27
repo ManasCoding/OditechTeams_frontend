@@ -180,6 +180,20 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
           return [...prev, msg];
         });
       }
+      
+      // Update channel list with the latest message and unread count
+      setChannelList(prev => prev.map(c => {
+        if ((c._id || c.id) === msg.channelId) {
+          const isActive = activeChannelRef.current && activeChannelRef.current === msg.channelId;
+          const newUnread = isActive ? 0 : (c.unread || 0) + 1;
+          return {
+            ...c,
+            latestMessage: msg,
+            unread: newUnread
+          };
+        }
+        return c;
+      }));
     };
     
     socket.on('receive_channel_message', handleReceive);
@@ -329,7 +343,16 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
           {filtered.map(c => (
             <button
               key={c._id || c.id}
-              onClick={() => setActiveChannel(c._id || c.id)}
+              onClick={() => {
+                setActiveChannel(c._id || c.id);
+                // Clear unread count for this channel
+                setChannelList(prev => prev.map(chItem => {
+                  if ((chItem._id || chItem.id) === (c._id || c.id)) {
+                    return { ...chItem, unread: 0 };
+                  }
+                  return chItem;
+                }));
+              }}
               className={`w-full text-left px-3 py-3 rounded-xl mb-0.5 transition-all ${
                 activeChannel === (c._id || c.id)
                   ? 'bg-brand-purple/10 border border-brand-purple/20'
@@ -359,7 +382,9 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-400 mt-0.5 ml-5">{c.description || c.desc}</p>
+              <p className="text-xs text-gray-400 mt-0.5 ml-5 truncate max-w-[180px]">
+                {c.latestMessage ? `${c.latestMessage.author}: ${c.latestMessage.text}` : (c.description || c.desc)}
+              </p>
             </button>
           ))}
           {isAdmin && (
