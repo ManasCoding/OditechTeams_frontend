@@ -751,8 +751,12 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
                           : 'hover:bg-gray-50'
                       }`}
                     >
-                      <div className="w-8 h-8 rounded-full bg-brand-purple/20 flex items-center justify-center text-brand-purple text-xs font-bold flex-shrink-0">
-                        {(u.fullName || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                      <div className="w-8 h-8 rounded-full bg-brand-purple/20 flex items-center justify-center text-brand-purple text-xs font-bold flex-shrink-0 overflow-hidden">
+                        {getMediaUrl(u.avatar) ? (
+                          <img src={getMediaUrl(u.avatar)} alt={u.fullName} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                        ) : (
+                          (u.fullName || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-800 truncate">{u.fullName}</p>

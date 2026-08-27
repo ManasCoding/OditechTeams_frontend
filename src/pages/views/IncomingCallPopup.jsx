@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { getMediaUrl } from '../../api';
 import { PhoneCall, PhoneOff, Video } from 'lucide-react';
 
 export default function IncomingCallPopup({ incomingCall, onAccept, onReject }) {
@@ -82,8 +83,8 @@ export default function IncomingCallPopup({ incomingCall, onAccept, onReject }) 
           <div className="relative flex-shrink-0">
             <div className="absolute inset-0 rounded-full bg-brand-purple/40 animate-ping scale-125"></div>
             <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xl font-bold shadow-lg overflow-hidden">
-              {callerInfo?.avatar
-                ? <img src={callerInfo.avatar} alt={callerName} className="w-full h-full object-cover" />
+              {getMediaUrl(callerInfo?.avatar)
+                ? <img src={getMediaUrl(callerInfo.avatar)} alt={callerName} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 : initials
               }
             </div>
