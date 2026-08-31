@@ -72,8 +72,6 @@ const getNavItems = (isAdmin) => [
       { label: 'Members', icon: Users },
       { label: 'Departments', icon: Building2 },
       { label: 'Files', icon: Folder },
-      { label: 'Tasks', icon: CheckSquare },
-      { label: 'Apps', icon: Grid },
     ]
   },
   ...(isAdmin ? [{
