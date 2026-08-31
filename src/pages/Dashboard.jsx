@@ -399,7 +399,7 @@ export default function Dashboard() {
           {activeNav === 'Chat' && <ChatView />}
           {activeNav === 'Meetings' && <MeetingsView isAdmin={isAdmin} />}
           {activeNav === 'Calls' && <CallsView />}
-          {activeNav === 'Members' && <MembersView />}
+          {activeNav === 'Members' && <MembersView setActiveNav={setActiveNav} setSelectedMemberId={setSelectedMemberId} />}
           {activeNav === 'Files' && <FilesView />}
           {activeNav === 'Calendar' && <CalendarView loggedInUser={loggedInUser} isAdmin={isAdmin} />}
           {activeNav === 'User Management' && <UserManagementView isAdmin={isAdmin} />}

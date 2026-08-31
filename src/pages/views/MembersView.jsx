@@ -7,7 +7,7 @@ const AVATAR_COLORS = [
   'bg-purple-400','bg-orange-400','bg-teal-400','bg-indigo-400'
 ];
 
-export default function MembersView() {
+export default function MembersView({ setActiveNav, setSelectedMemberId }) {
   const [search, setSearch] = useState('');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,9 +55,6 @@ export default function MembersView() {
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-bold text-gray-900">Members</h2>
-          <button className="flex items-center gap-2 bg-brand-purple text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-purple-700 transition-all shadow-md shadow-purple-200">
-            <UserPlus size={15} /> Invite Members
-          </button>
         </div>
 
         {/* Search */}
@@ -101,6 +98,12 @@ export default function MembersView() {
                 return (
                   <tr
                     key={user._id || i}
+                    onClick={() => {
+                      if (setActiveNav && setSelectedMemberId) {
+                        setSelectedMemberId(user._id || user.id);
+                        setActiveNav('MemberProfile');
+                      }
+                    }}
                     className={`border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors cursor-pointer`}
                   >
                     <td className="px-5 py-4">
