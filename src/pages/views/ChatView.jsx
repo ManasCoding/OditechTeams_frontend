@@ -1,12 +1,18 @@
 import API_URL, { getMediaUrl } from '../../api';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Send, Smile, Paperclip, Video, Phone, Check, CheckCheck, MoreVertical, Search as SearchIcon, Mic, Lock, MessageSquare, Trash2 } from 'lucide-react';
+import { Search, Send, Smile, Paperclip, Video, Phone, MoreVertical, Search as SearchIcon, Lock, MessageSquare, Trash2, ChevronDown, X } from 'lucide-react';
 import { socket } from '../../socket';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isSameDay } from 'date-fns';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import CallScreen from './CallScreen';
 import IncomingCallPopup from './IncomingCallPopup';
+import MessageBubble from '../../components/chat/MessageBubble';
+import DateSeparator from '../../components/chat/DateSeparator';
+import TypingIndicator from '../../components/chat/TypingIndicator';
+import ReplyPreview from '../../components/chat/ReplyPreview';
+import AttachmentPreview from '../../components/chat/AttachmentPreview';
+import { useChat } from '../../hooks/useChat';
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -24,11 +30,17 @@ export default function ChatView() {
   const [conversations, setConversations] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
-  const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
   const [search, setSearch] = useState('');
   const [typingUsers, setTypingUsers] = useState({});
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const typingTimerRef = useRef(null);
+
+  // ── Reply / Attachment state ─────────────────────────────────
+  const [replyTo, setReplyTo] = useState(null);
+  const [attachment, setAttachment] = useState(null); // { fileUrl, fileType, fileName, fileSize, localPreview }
 
   // â”€â”€â”€ Calling State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [callState, setCallState] = useState('idle');   // idle | calling | ringing | connected | ended
@@ -96,25 +108,70 @@ export default function ChatView() {
     loadData();
 
     socket.on('receive_message', (msg) => {
-      if (activeChatRef.current && msg.conversationId === activeChatRef.current._id) {
-        setMessages((prev) => [...prev, msg]);
-        socket.emit('message_seen', { roomId: activeChatRef.current._id });
+      const isFromMe = (msg.senderId?._id || msg.senderId) === currentUserId;
+      const convId = msg.conversationId?._id || msg.conversationId;
+
+      // Recipient acknowledges delivery if conversation is not active or active
+      if (!isFromMe && msg._id) {
+        socket.emit('message_delivered', {
+          messageIds: [msg._id],
+          conversationId: convId,
+          senderId: msg.senderId?._id || msg.senderId
+        });
       }
-      // Update latest message and unreadCount in conversation list
-      setConversations((prev) => 
-        prev.map(c => {
-          if (c._id === msg.conversationId) {
-            const isCurrentActive = activeChatRef.current && activeChatRef.current._id === msg.conversationId;
-            const newUnread = isCurrentActive ? 0 : (c.unreadCount || 0) + 1;
-            return {
-              ...c,
-              latestMessage: msg,
-              unreadCount: newUnread
-            };
+
+      setConversations((prev) => {
+        let found = false;
+        const updated = prev.map(c => {
+          if (c._id === convId) {
+            found = true;
+            const isCurrentActive = activeChatRef.current && activeChatRef.current._id === convId;
+            let newUnread = c.unreadCount || 0;
+            if (isCurrentActive) {
+              newUnread = 0;
+            } else if (!isFromMe) {
+              newUnread += 1;
+            }
+            return { ...c, latestMessage: msg, unreadCount: newUnread, updatedAt: msg.createdAt || new Date().toISOString() };
           }
           return c;
-        })
-      );
+        });
+
+        // Reorder conversations so newest message is at top
+        updated.sort((a, b) => {
+          const dateA = new Date(a.latestMessage?.createdAt || a.updatedAt || 0).getTime();
+          const dateB = new Date(b.latestMessage?.createdAt || b.updatedAt || 0).getTime();
+          return dateB - dateA;
+        });
+
+        return updated;
+      });
+    });
+
+    socket.on('message_delivered', ({ roomId, messageIds = [] }) => {
+      setConversations(prev => prev.map(c => {
+        if (c.latestMessage && (c._id === roomId || messageIds.some(id => id.toString() === c.latestMessage._id?.toString()))) {
+          if (c.latestMessage.status !== 'seen' && c.latestMessage.status !== 'read' && c.latestMessage.messageStatus !== 'seen') {
+            return {
+              ...c,
+              latestMessage: { ...c.latestMessage, status: 'delivered', messageStatus: 'delivered' }
+            };
+          }
+        }
+        return c;
+      }));
+    });
+
+    socket.on('message_seen', ({ roomId }) => {
+      setConversations(prev => prev.map(c => {
+        if (c._id === roomId && c.latestMessage) {
+          return {
+            ...c,
+            latestMessage: { ...c.latestMessage, status: 'seen', messageStatus: 'seen' }
+          };
+        }
+        return c;
+      }));
     });
 
     socket.on('typing', ({ userId, roomId }) => {
@@ -129,17 +186,12 @@ export default function ChatView() {
       });
     });
 
-    socket.on('message_seen', ({ roomId, userId }) => {
-      setMessages((prev) => prev.map(m => 
-        m.senderId?._id !== userId ? { ...m, messageStatus: 'seen' } : m
-      ));
-    });
-
     socket.on('user_online', (userId) => {
       setConversations((prev) => prev.map(c => ({
         ...c,
         participants: c.participants.map(p => p._id === userId ? { ...p, isOnline: true } : p)
       })));
+      setAllUsers((prev) => prev.map(u => (u._id === userId || u.id === userId) ? { ...u, isOnline: true } : u));
     });
 
     socket.on('user_offline', ({ userId, lastSeen }) => {
@@ -147,16 +199,16 @@ export default function ChatView() {
         ...c,
         participants: c.participants.map(p => p._id === userId ? { ...p, isOnline: false, lastSeen } : p)
       })));
+      setAllUsers((prev) => prev.map(u => (u._id === userId || u.id === userId) ? { ...u, isOnline: false, lastSeen } : u));
     });
 
-    // â”€â”€â”€ Calling Socket Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Calling Socket Events ────────────────────────────────────────
     socket.on('incoming_call', ({ from, callType: ct, callerInfo, callId: cid }) => {
       setIncomingCall({ from, callType: ct, callerInfo, callId: cid });
     });
 
     socket.on('call_accepted', async ({ from }) => {
       setCallState('connected');
-      // Create and send WebRTC offer
       try {
         const pc = createPeerConnection(from);
         const stream = await navigator.mediaDevices.getUserMedia(
@@ -224,9 +276,10 @@ export default function ChatView() {
 
     return () => {
       socket.off('receive_message');
+      socket.off('message_delivered');
+      socket.off('message_seen');
       socket.off('typing');
       socket.off('stop_typing');
-      socket.off('message_seen');
       socket.off('user_online');
       socket.off('user_offline');
       socket.off('incoming_call');
@@ -240,54 +293,76 @@ export default function ChatView() {
     };
   }, [token, currentUserId]);
 
-  useEffect(() => {
-    if (activeChat && token) {
-      setMessages([]); // Clear old messages immediately
-      socket.emit('join_room', activeChat._id);
-      
-      const loadMessages = async () => {
-        try {
-          const res = await fetch(`${API_URL}/api/conversations/${activeChat._id}/messages`);
-          const data = await res.json();
-          if (data.success) {
-            setMessages(data.messages);
-            socket.emit('message_seen', { roomId: activeChat._id });
-          }
-        } catch (err) {
-          console.error('Failed to load messages', err);
-        }
-      };
-      loadMessages();
+  // ── useChat hook — message state, send, edit, delete, react ──────
+  const {
+    messages,
+    isAtBottom,
+    newMsgCount,
+    handleScroll,
+    sendMessage,
+    retryMessage,
+    editMessage,
+    deleteMessage,
+    reactToMessage,
+    scrollToMessage,
+    markReadNow,
+  } = useChat({ activeChat, currentUserId, token });
 
-      return () => {
-        socket.emit('leave_room', activeChat._id);
-      };
+  // Auto-scroll when messages arrive and user is at bottom
+  useEffect(() => {
+    if (isAtBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [activeChat?._id, token]);
+  }, [messages, isAtBottom]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, typingUsers]);
+  // ── File Upload Handler ──────────────────────────────────────────
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const localPreview = file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
+    const fileType = file.type.startsWith('image/') ? 'image'
+      : file.type.startsWith('video/') ? 'video'
+      : file.type.startsWith('audio/') ? 'audio'
+      : file.type === 'application/pdf' || file.name.endsWith('.pdf') ? 'document'
+      : 'file';
 
-  const handleSendMessage = () => {
-    if (!messageInput.trim() || !activeChat) return;
-    
-    socket.emit('send_message', {
-      roomId: activeChat._id,
-      text: messageInput.trim()
-    });
-    
-    socket.emit('stop_typing', { roomId: activeChat._id });
-    setMessageInput('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success) {
+        setAttachment({ fileUrl: data.fileUrl, fileType, fileName: file.name, fileSize: file.size, localPreview });
+      }
+    } catch (err) {
+      console.error('File upload failed', err);
+    }
+    e.target.value = '';
   };
 
+  // ── Upgraded send ────────────────────────────────────────────────
+  const handleSendMessage = () => {
+    const text = messageInput.trim();
+    if ((!text && !attachment) || !activeChat) return;
+    sendMessage({ text, replyTo, attachment });
+    setMessageInput('');
+    setReplyTo(null);
+    setAttachment(null);
+    socket.emit('stop_typing', { roomId: activeChat._id });
+  };
+
+  // ── Debounced typing ─────────────────────────────────────────────
   const handleTyping = (e) => {
     setMessageInput(e.target.value);
     if (!activeChat) return;
-    
     if (e.target.value) {
       socket.emit('typing', { roomId: activeChat._id });
+      clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = setTimeout(() => {
+        socket.emit('stop_typing', { roomId: activeChat._id });
+      }, 1500);
     } else {
+      clearTimeout(typingTimerRef.current);
       socket.emit('stop_typing', { roomId: activeChat._id });
     }
   };
@@ -726,88 +801,126 @@ export default function ChatView() {
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-5 relative z-10 scroll-smooth">
-              <div className="space-y-4">
+            <div
+              ref={messagesContainerRef}
+              onScroll={handleScroll}
+              className="flex-1 overflow-y-auto p-4 relative z-10 scroll-smooth"
+            >
+              <div className="space-y-1 pb-2">
                 {messages.map((msg, idx) => {
-                  const isMe = msg.senderId?._id === currentUserId;
-                  const showAvatar = !isMe && (idx === 0 || messages[idx - 1].senderId?._id !== msg.senderId?._id);
+                  const isMe = (msg.senderId?._id || msg.senderId) === currentUserId;
+                  const prevMsg = messages[idx - 1];
+                  const nextMsg = messages[idx + 1];
+
+                  // Date separator
+                  const showDateSep = idx === 0 || !isSameDay(new Date(msg.createdAt), new Date(prevMsg.createdAt));
+
+                  // Avatar: show for first msg in a sender run
+                  const showAvatar = !isMe && (idx === 0 || (prevMsg.senderId?._id || prevMsg.senderId) !== (msg.senderId?._id || msg.senderId));
+                  // Show sender name in group chats
+                  const showName = !isMe && activeChat?.isGroup && showAvatar;
+
                   return (
-                    <div key={msg._id} className={cn('flex gap-2 max-w-[75%]', isMe ? 'ml-auto flex-row-reverse' : 'mr-auto')}>
-                      {showAvatar && (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold mt-auto overflow-hidden">
-                          {getMediaUrl(msg.senderId?.avatar)
-                            ? <img src={getMediaUrl(msg.senderId.avatar)} alt={msg.senderId.fullName} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                            : msg.senderId?.fullName?.[0]?.toUpperCase() || '?'
-                          }
-                        </div>
-                      )}
-                      {!showAvatar && !isMe && <div className="w-8 flex-shrink-0" />}
+                    <React.Fragment key={msg._id}>
+                      {showDateSep && <DateSeparator date={msg.createdAt} />}
                       <div className={cn(
-                        'relative px-4 py-2 text-[15px] shadow-sm flex flex-col',
-                        isMe ? 'bg-[#D9FDD3] text-gray-800 rounded-2xl rounded-tr-sm' : 'bg-white text-gray-800 rounded-2xl rounded-tl-sm border border-gray-100'
+                        'transition-all duration-200',
+                        idx > 0 && !showDateSep && !showAvatar && !isMe ? 'mt-0.5' : 'mt-2'
                       )}>
-                        {activeChat?.isGroup && !isMe && showAvatar && (
-                          <span className="text-[11px] font-bold text-orange-500 mb-0.5">{msg.senderId?.fullName || 'Unknown'}</span>
-                        )}
-                        <span className="break-words leading-snug pb-1 pr-6">{msg.text}</span>
-                        <div className="absolute bottom-1 right-2 flex items-center gap-1">
-                          <span className="text-[10px] text-gray-500/80 leading-none">{format(new Date(msg.createdAt), 'HH:mm')}</span>
-                          {isMe && (
-                            <span className={cn('text-[10px]', msg.messageStatus === 'seen' ? 'text-blue-500' : 'text-gray-400')}>
-                              {msg.messageStatus === 'sent' ? <Check size={12} /> : <CheckCheck size={12} />}
-                            </span>
-                          )}
-                        </div>
+                        <MessageBubble
+                          msg={msg}
+                          isMe={isMe}
+                          showAvatar={showAvatar}
+                          showName={showName}
+                          currentUserId={currentUserId}
+                          token={token}
+                          onReply={(m) => setReplyTo(m)}
+                          onEdit={editMessage}
+                          onDelete={deleteMessage}
+                          onReact={reactToMessage}
+                          onRetry={retryMessage}
+                          onScrollTo={scrollToMessage}
+                        />
                       </div>
-                    </div>
+                    </React.Fragment>
                   );
                 })}
 
-                {isSomeoneTyping && (
-                  <div className="flex gap-2 max-w-[75%] mr-auto items-end">
-                    <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 animate-pulse" />
-                    <div className="bg-white px-4 py-3 rounded-2xl rounded-tl-sm shadow-sm border border-gray-100 flex gap-1">
-                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
-                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}} />
-                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}} />
-                    </div>
-                  </div>
-                )}
+                {/* Typing indicator */}
+                {isSomeoneTyping && (() => {
+                  const typingUserId = typingUsers[activeChat._id];
+                  const typingUser = allUsers.find(u => u._id === typingUserId);
+                  return <TypingIndicator key="typing" name={typingUser?.fullName} />;
+                })()}
                 <div ref={messagesEndRef} />
               </div>
             </div>
 
-            {/* Message Input */}
-            <div className="bg-[#F0F2F5] p-3 relative z-10 border-t border-gray-200/60">
-              <div className="flex items-end gap-2 bg-white rounded-3xl pl-4 pr-1.5 py-1.5 shadow-sm border border-transparent transition-all focus-within:border-brand-purple/30 focus-within:shadow-md">
-                <button className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100 mb-0.5">
-                  <Smile size={22} strokeWidth={1.5} />
-                </button>
-                <button className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100 mb-0.5">
+            {/* Scroll-to-bottom button */}
+            {!isAtBottom && (
+              <button
+                onClick={() => {
+                  messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                  markReadNow();
+                }}
+                className="absolute bottom-24 right-6 z-20 bg-white border border-gray-200 rounded-full shadow-lg px-3 py-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-all"
+              >
+                <ChevronDown size={14} />
+                {newMsgCount > 0 && (
+                  <span className="bg-[#6C48F5] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{newMsgCount}</span>
+                )}
+              </button>
+            )}
+
+            {/* Message Input Area */}
+            <div className="bg-[#F0F2F5] relative z-10 border-t border-gray-200/60">
+              {/* Reply preview strip */}
+              {replyTo && <ReplyPreview message={replyTo} onCancel={() => setReplyTo(null)} />}
+
+              {/* Attachment preview */}
+              {attachment && <AttachmentPreview attachment={attachment} onRemove={() => setAttachment(null)} />}
+
+              {/* Hidden file input */}
+              <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelect} />
+
+              <div className="flex items-end gap-2 bg-white mx-3 mb-3 rounded-2xl pl-3 pr-1.5 py-1.5 shadow-sm border border-transparent transition-all focus-within:border-[#6C48F5]/30 focus-within:shadow-md">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-gray-400 hover:text-[#6C48F5] transition-colors p-2 rounded-full hover:bg-purple-50 mb-0.5 flex-shrink-0"
+                  title="Attach file"
+                >
                   <Paperclip size={20} strokeWidth={1.5} />
                 </button>
-                <input
-                  type="text"
-                  placeholder={`Message ${activePartner?.fullName || 'group'}…`}
+                <textarea
+                  rows={1}
+                  placeholder={`Message ${activePartner?.fullName || (activeChat?.isGroup ? activeChat.name : 'group')}…`}
                   value={messageInput}
                   onChange={handleTyping}
-                  onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                  className="flex-1 bg-transparent text-[15px] text-gray-800 outline-none placeholder-gray-400 min-h-[40px] py-2"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  className="flex-1 bg-transparent text-[14px] text-gray-800 outline-none placeholder-gray-400 min-h-[36px] max-h-[120px] py-2 resize-none leading-snug"
+                  style={{ height: 'auto' }}
+                  onInput={e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
                 />
                 <button
                   onClick={handleSendMessage}
-                  disabled={!messageInput.trim()}
+                  disabled={!messageInput.trim() && !attachment}
                   className={cn(
-                    'w-10 h-10 rounded-full flex items-center justify-center text-white transition-all ml-1 flex-shrink-0 mb-0.5',
-                    messageInput.trim()
-                      ? 'bg-brand-purple hover:bg-purple-700 shadow-md hover:scale-105 active:scale-95'
+                    'w-9 h-9 rounded-xl flex items-center justify-center text-white transition-all ml-1 flex-shrink-0 mb-0.5',
+                    (messageInput.trim() || attachment)
+                      ? 'bg-[#6C48F5] hover:bg-purple-700 shadow-md hover:scale-105 active:scale-95'
                       : 'bg-gray-200 cursor-not-allowed text-gray-400'
                   )}
                 >
-                  <Send size={18} className={messageInput.trim() ? 'ml-0.5' : ''} />
+                  <Send size={16} className={(messageInput.trim() || attachment) ? 'ml-0.5' : ''} />
                 </button>
               </div>
             </div>
+
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center relative z-10 text-center px-6">

@@ -5,30 +5,46 @@ import {
   ArrowLeft, Camera, Edit3, Calendar, FileText, Users, UserCheck, 
   Globe, Eye, Clock, Languages, Bell, Copy, Check, Share2, Trash2, 
   Download, Image as ImageIcon, ChevronRight, Plus, MoreVertical, ShieldCheck,
-  X, Upload
+  X, Upload, AtSign, MessageSquare, CheckSquare, UserPlus
 } from 'lucide-react';
 
 export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
-  if (!channel) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-[#F8F9FD] p-6">
-        <p className="text-gray-500 mb-4">Group not found.</p>
-        <button onClick={() => setActiveNav('Channels')} className="text-brand-purple font-semibold hover:underline">
-          Go Back
-        </button>
-      </div>
-    );
-  }
-
-  const [currentChannel, setCurrentChannel] = useState(channel);
+  // ── All hooks must be declared before any conditional return ──
+  const [currentChannel, setCurrentChannel] = useState(channel || null);
   const [allUsersMap, setAllUsersMap] = useState({});
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editName, setEditName] = useState(channel?.name || '');
+  const [editDesc, setEditDesc] = useState(channel?.description || channel?.desc || '');
+
+  // Toggles State for Group Settings
+  const [settings, setSettings] = useState({
+    whoCanAddMembers: 'Only Admins',
+    whoCanPost: 'All Members',
+    memberApproval: true,
+    allowMemberInvite: true,
+    showGroupInfo: true,
+    allowFileSharing: true,
+  });
+
+  // Toggles State for Notifications
+  const [notifications, setNotifications] = useState({
+    allActivity: true,
+    newMembers: true,
+    memberPosts: true,
+    mentions: true,
+    filesDocs: true,
+    emailDigest: 'Daily',
+  });
+
+  const avatarInputRef = useRef(null);
+  const coverInputRef = useRef(null);
 
   // Fetch populated channel & all users lookup map on mount
   useEffect(() => {
+    if (!channel) return;
     const channelId = channel._id || channel.id;
     if (channelId) {
       fetch(`${API_URL}/api/channels/${channelId}`)
@@ -55,32 +71,17 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
       .catch(err => console.error('Failed to fetch users:', err));
   }, [channel?._id, channel?.id]);
 
-  // Group Info state for edit
-  const [editName, setEditName] = useState(currentChannel.name || '');
-  const [editDesc, setEditDesc] = useState(currentChannel.description || currentChannel.desc || '');
-
-  // Toggles State for Group Settings
-  const [settings, setSettings] = useState({
-    whoCanAddMembers: 'Only Admins',
-    whoCanPost: 'All Members',
-    memberApproval: true,
-    allowMemberInvite: true,
-    showGroupInfo: true,
-    allowFileSharing: true,
-  });
-
-  // Toggles State for Notifications
-  const [notifications, setNotifications] = useState({
-    allActivity: true,
-    newMembers: true,
-    memberPosts: true,
-    mentions: true,
-    filesDocs: true,
-    emailDigest: 'Daily',
-  });
-
-  const avatarInputRef = useRef(null);
-  const coverInputRef = useRef(null);
+  // Guard: render fallback if channel is not available
+  if (!channel || !currentChannel) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center bg-[#F8F9FD] p-6">
+        <p className="text-gray-500 mb-4">Group not found.</p>
+        <button onClick={() => setActiveNav('Channels')} className="text-brand-purple font-semibold hover:underline">
+          Go Back
+        </button>
+      </div>
+    );
+  }
 
   const groupHandle = `# ${currentChannel.name?.toLowerCase().replace(/\s+/g, '') || 'group'}`;
   const groupId = `GRP-2026-${(currentChannel._id || '0002').slice(-4).toUpperCase()}`;
@@ -417,7 +418,7 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
               {/* Setting Option 1 */}
               <div className="flex items-center justify-between cursor-pointer hover:bg-gray-50/80 p-1 rounded-lg">
                 <span className="text-gray-700 font-semibold flex items-center gap-2">
-                  <Users size={14} className="text-gray-400" /> Who can add members
+                  <Users size={15} className="text-gray-400" /> Who can add members
                 </span>
                 <span className="text-gray-500 font-medium flex items-center gap-1">
                   Only Admins <ChevronRight size={13} />
@@ -427,7 +428,7 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
               {/* Setting Option 2 */}
               <div className="flex items-center justify-between cursor-pointer hover:bg-gray-50/80 p-1 rounded-lg">
                 <span className="text-gray-700 font-semibold flex items-center gap-2">
-                  <FileText size={14} className="text-gray-400" /> Who can post
+                  <MessageSquare size={15} className="text-gray-400" /> Who can post
                 </span>
                 <span className="text-gray-500 font-medium flex items-center gap-1">
                   All Members <ChevronRight size={13} />
@@ -436,14 +437,17 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
 
               {/* Toggle Option 1 */}
               <div className="flex items-center justify-between pt-1">
-                <div>
-                  <p className="text-gray-800 font-semibold">Member approval required</p>
-                  <p className="text-[11px] text-gray-400">New members need admin approval</p>
+                <div className="flex items-start gap-2">
+                  <CheckSquare size={15} className="text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="text-gray-800 font-semibold">Member approval required</p>
+                    <p className="text-[11px] text-gray-400">New members need admin approval</p>
+                  </div>
                 </div>
                 <button 
                   onClick={() => toggleSetting('memberApproval')}
-                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 ${
-                    settings.memberApproval ? 'bg-brand-purple' : 'bg-gray-300'
+                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 flex-shrink-0 ${
+                    settings.memberApproval ? 'bg-[#6C48F5]' : 'bg-gray-300'
                   }`}
                 >
                   <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform ${
@@ -454,14 +458,17 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
 
               {/* Toggle Option 2 */}
               <div className="flex items-center justify-between pt-1">
-                <div>
-                  <p className="text-gray-800 font-semibold">Allow member to invite others</p>
-                  <p className="text-[11px] text-gray-400">Members can invite new users</p>
+                <div className="flex items-start gap-2">
+                  <UserPlus size={15} className="text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="text-gray-800 font-semibold">Allow member to invite others</p>
+                    <p className="text-[11px] text-gray-400">Members can invite new users</p>
+                  </div>
                 </div>
                 <button 
                   onClick={() => toggleSetting('allowMemberInvite')}
-                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 ${
-                    settings.allowMemberInvite ? 'bg-brand-purple' : 'bg-gray-300'
+                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 flex-shrink-0 ${
+                    settings.allowMemberInvite ? 'bg-[#6C48F5]' : 'bg-gray-300'
                   }`}
                 >
                   <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform ${
@@ -472,14 +479,17 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
 
               {/* Toggle Option 3 */}
               <div className="flex items-center justify-between pt-1">
-                <div>
-                  <p className="text-gray-800 font-semibold">Show group info to non-members</p>
-                  <p className="text-[11px] text-gray-400">Group will be visible in search</p>
+                <div className="flex items-start gap-2">
+                  <Eye size={15} className="text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="text-gray-800 font-semibold">Show group info to non-members</p>
+                    <p className="text-[11px] text-gray-400">Group will be visible in search</p>
+                  </div>
                 </div>
                 <button 
                   onClick={() => toggleSetting('showGroupInfo')}
-                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 ${
-                    settings.showGroupInfo ? 'bg-brand-purple' : 'bg-gray-300'
+                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 flex-shrink-0 ${
+                    settings.showGroupInfo ? 'bg-[#6C48F5]' : 'bg-gray-300'
                   }`}
                 >
                   <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform ${
@@ -490,14 +500,17 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
 
               {/* Toggle Option 4 */}
               <div className="flex items-center justify-between pt-1">
-                <div>
-                  <p className="text-gray-800 font-semibold">Allow file sharing</p>
-                  <p className="text-[11px] text-gray-400">Members can upload and share files</p>
+                <div className="flex items-start gap-2">
+                  <FileText size={15} className="text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="text-gray-800 font-semibold">Allow file sharing</p>
+                    <p className="text-[11px] text-gray-400">Members can upload and share files</p>
+                  </div>
                 </div>
                 <button 
                   onClick={() => toggleSetting('allowFileSharing')}
-                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 ${
-                    settings.allowFileSharing ? 'bg-brand-purple' : 'bg-gray-300'
+                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 flex-shrink-0 ${
+                    settings.allowFileSharing ? 'bg-[#6C48F5]' : 'bg-gray-300'
                   }`}
                 >
                   <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform ${
@@ -514,14 +527,17 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
 
             <div className="space-y-4 flex-1 text-xs">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-800 font-semibold">All Group Activity</p>
-                  <p className="text-[11px] text-gray-400">New posts, updates, etc.</p>
+                <div className="flex items-start gap-2">
+                  <Bell size={15} className="text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="text-gray-800 font-semibold">All Group Activity</p>
+                    <p className="text-[11px] text-gray-400">New posts, updates, etc.</p>
+                  </div>
                 </div>
                 <button 
                   onClick={() => toggleNotification('allActivity')}
-                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 ${
-                    notifications.allActivity ? 'bg-brand-purple' : 'bg-gray-300'
+                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 flex-shrink-0 ${
+                    notifications.allActivity ? 'bg-[#6C48F5]' : 'bg-gray-300'
                   }`}
                 >
                   <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform ${
@@ -531,14 +547,17 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
               </div>
 
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-800 font-semibold">New Members</p>
-                  <p className="text-[11px] text-gray-400">When someone joins</p>
+                <div className="flex items-start gap-2">
+                  <Users size={15} className="text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="text-gray-800 font-semibold">New Members</p>
+                    <p className="text-[11px] text-gray-400">When someone joins</p>
+                  </div>
                 </div>
                 <button 
                   onClick={() => toggleNotification('newMembers')}
-                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 ${
-                    notifications.newMembers ? 'bg-brand-purple' : 'bg-gray-300'
+                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 flex-shrink-0 ${
+                    notifications.newMembers ? 'bg-[#6C48F5]' : 'bg-gray-300'
                   }`}
                 >
                   <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform ${
@@ -548,14 +567,17 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
               </div>
 
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-800 font-semibold">Member Posts</p>
-                  <p className="text-[11px] text-gray-400">Posts and replies</p>
+                <div className="flex items-start gap-2">
+                  <MessageSquare size={15} className="text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="text-gray-800 font-semibold">Member Posts</p>
+                    <p className="text-[11px] text-gray-400">Posts and replies</p>
+                  </div>
                 </div>
                 <button 
                   onClick={() => toggleNotification('memberPosts')}
-                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 ${
-                    notifications.memberPosts ? 'bg-brand-purple' : 'bg-gray-300'
+                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 flex-shrink-0 ${
+                    notifications.memberPosts ? 'bg-[#6C48F5]' : 'bg-gray-300'
                   }`}
                 >
                   <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform ${
@@ -565,14 +587,17 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
               </div>
 
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-800 font-semibold">Mentions</p>
-                  <p className="text-[11px] text-gray-400">When someone mentions you</p>
+                <div className="flex items-start gap-2">
+                  <AtSign size={15} className="text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="text-gray-800 font-semibold">Mentions</p>
+                    <p className="text-[11px] text-gray-400">When someone mentions you</p>
+                  </div>
                 </div>
                 <button 
                   onClick={() => toggleNotification('mentions')}
-                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 ${
-                    notifications.mentions ? 'bg-brand-purple' : 'bg-gray-300'
+                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 flex-shrink-0 ${
+                    notifications.mentions ? 'bg-[#6C48F5]' : 'bg-gray-300'
                   }`}
                 >
                   <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform ${
@@ -582,14 +607,17 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
               </div>
 
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-800 font-semibold">Files & Documents</p>
-                  <p className="text-[11px] text-gray-400">New files and documents</p>
+                <div className="flex items-start gap-2">
+                  <FileText size={15} className="text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="text-gray-800 font-semibold">Files & Documents</p>
+                    <p className="text-[11px] text-gray-400">New files and documents</p>
+                  </div>
                 </div>
                 <button 
                   onClick={() => toggleNotification('filesDocs')}
-                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 ${
-                    notifications.filesDocs ? 'bg-brand-purple' : 'bg-gray-300'
+                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center px-0.5 flex-shrink-0 ${
+                    notifications.filesDocs ? 'bg-[#6C48F5]' : 'bg-gray-300'
                   }`}
                 >
                   <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform ${
@@ -613,48 +641,50 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
             </div>
           </div>
 
-          {/* CARD 6: Actions & Group Link */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between space-y-5">
-            <div>
+          {/* COLUMN 3: Actions (Card 6) & Group Link (Card 7) */}
+          <div className="flex flex-col gap-6">
+
+            {/* CARD 6: Actions */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <h3 className="text-sm font-bold text-gray-900 mb-3">Actions</h3>
               <div className="space-y-2">
                 <button 
                   onClick={() => setIsEditModalOpen(true)}
-                  className="w-full text-left px-3.5 py-2 rounded-xl text-xs font-semibold border border-purple-200 text-purple-600 bg-purple-50/40 hover:bg-purple-100 transition-colors flex items-center gap-2"
+                  className="w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-purple-200 text-purple-600 bg-purple-50/20 hover:bg-purple-50 transition-colors flex items-center gap-2"
                 >
-                  <Edit3 size={14} /> Update Group Info
+                  <Edit3 size={14} className="text-purple-500" /> Update Group Info
                 </button>
                 <button 
                   onClick={() => avatarInputRef.current?.click()}
-                  className="w-full text-left px-3.5 py-2 rounded-xl text-xs font-semibold border border-emerald-200 text-emerald-600 bg-emerald-50/40 hover:bg-emerald-100 transition-colors flex items-center gap-2"
+                  className="w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-emerald-200 text-emerald-600 bg-emerald-50/20 hover:bg-emerald-50 transition-colors flex items-center gap-2"
                 >
-                  <ImageIcon size={14} /> Change Group Avatar
+                  <ImageIcon size={14} className="text-emerald-500" /> Change Group Avatar
                 </button>
                 <button 
                   onClick={() => coverInputRef.current?.click()}
-                  className="w-full text-left px-3.5 py-2 rounded-xl text-xs font-semibold border border-blue-200 text-blue-600 bg-blue-50/40 hover:bg-blue-100 transition-colors flex items-center gap-2"
+                  className="w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-blue-200 text-blue-600 bg-blue-50/20 hover:bg-blue-50 transition-colors flex items-center gap-2"
                 >
-                  <ImageIcon size={14} /> Change Cover Photo
+                  <ImageIcon size={14} className="text-blue-500" /> Change Cover Photo
                 </button>
                 <button 
-                  className="w-full text-left px-3.5 py-2 rounded-xl text-xs font-semibold border border-amber-200 text-amber-600 bg-amber-50/40 hover:bg-amber-100 transition-colors flex items-center gap-2"
+                  className="w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-amber-200 text-amber-600 bg-amber-50/20 hover:bg-amber-50 transition-colors flex items-center gap-2"
                 >
-                  <Download size={14} /> Export Group Data
+                  <Download size={14} className="text-amber-500" /> Export Group Data
                 </button>
                 <button 
-                  className="w-full text-left px-3.5 py-2 rounded-xl text-xs font-semibold border border-red-200 text-red-600 bg-red-50/40 hover:bg-red-100 transition-colors flex items-center gap-2"
+                  className="w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-red-200 text-red-600 bg-red-50/20 hover:bg-red-50 transition-colors flex items-center gap-2"
                 >
-                  <Trash2 size={14} /> Delete Group
+                  <Trash2 size={14} className="text-red-500" /> Delete Group
                 </button>
               </div>
             </div>
 
-            {/* Group Link Section */}
-            <div className="pt-3 border-t border-gray-100">
-              <h4 className="text-xs font-bold text-gray-900 mb-0.5">Group Link</h4>
+            {/* CARD 7: Group Link */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+              <h4 className="text-sm font-bold text-gray-900 mb-0.5">Group Link</h4>
               <p className="text-[11px] text-gray-400 mb-2">Share this link to invite others</p>
               
-              <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 mb-2">
+              <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 mb-3">
                 <input 
                   type="text" 
                   readOnly 
@@ -663,7 +693,7 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
                 />
                 <button 
                   onClick={handleCopyLink} 
-                  className="p-1 text-gray-400 hover:text-brand-purple transition-colors flex-shrink-0"
+                  className="p-1 text-gray-400 hover:text-[#6C48F5] transition-colors flex-shrink-0"
                   title="Copy link"
                 >
                   {copiedLink ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
@@ -672,11 +702,12 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
 
               <button 
                 onClick={handleCopyLink}
-                className="w-full py-2 bg-brand-purple hover:bg-purple-700 text-white rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-purple-200"
+                className="w-full py-2.5 bg-[#6C48F5] hover:bg-purple-700 text-white rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-purple-200"
               >
                 <Share2 size={13} /> {copiedLink ? 'Link Copied!' : 'Share Group Link'}
               </button>
             </div>
+
           </div>
 
         </div>
@@ -691,7 +722,7 @@ export default function GroupProfileView({ channel, setActiveNav, isAdmin }) {
             {isAdmin && (
               <button 
                 onClick={() => setActiveNav('Channels')}
-                className="flex items-center gap-1.5 px-4 py-2 border border-purple-200 text-brand-purple bg-purple-50/50 hover:bg-brand-purple hover:text-white rounded-xl text-xs font-semibold transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 border border-purple-300 text-[#6C48F5] bg-purple-50/40 hover:bg-[#6C48F5] hover:text-white rounded-xl text-xs font-semibold transition-colors"
               >
                 <Plus size={14} /> Add Members
               </button>
