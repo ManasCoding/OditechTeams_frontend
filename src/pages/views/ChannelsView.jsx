@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Hash, Search, Plus, Send, Smile, Paperclip, AtSign, Bold, Pin, Users, FileText, X, Upload, Trash2, UserMinus } from 'lucide-react';
 import { socket } from '../../socket';
 import AvatarStack from '../../components/profile/AvatarStack';
+import EmojiPicker from 'emoji-picker-react';
 
 const initialChannels = [
   { id: 1, name: 'general', desc: 'Company-wide updates', unread: 0 },
@@ -59,6 +60,10 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
   const [newChannelName, setNewChannelName] = useState('');
   const [newChannelDesc, setNewChannelDesc] = useState('');
   const [newChannelAvatar, setNewChannelAvatar] = useState(null);
+
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [attachment, setAttachment] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Add User modal state
   const [allUsers, setAllUsers] = useState([]);
@@ -291,13 +296,38 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
   );
 
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !activeChannel) return;
+    if ((!messageInput.trim() && !attachment) || !activeChannel) return;
     const name = loggedInUser?.fullName || loggedInUser?.email?.split('@')[0] || 'You';
     const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
     const avatar = loggedInUser?.avatar || '';
     const senderId = loggedInUser?._id || null;
 
+    setIsUploading(true);
+
     try {
+      let fileUrl = '';
+      let fileName = '';
+      let fileSize = 0;
+      let fileType = 'text';
+
+      if (attachment) {
+        const formData = new FormData();
+        formData.append('file', attachment);
+        const uploadRes = await fetch(`${API_URL}/api/upload`, {
+          method: 'POST',
+          body: formData
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.success) {
+          fileUrl = uploadData.fileUrl;
+          fileName = attachment.name;
+          fileSize = attachment.size;
+          fileType = attachment.type.startsWith('image/') ? 'image' : 
+                     attachment.type.startsWith('video/') ? 'video' : 
+                     attachment.type.startsWith('audio/') ? 'audio' : 'file';
+        }
+      }
+
       const res = await fetch(`${API_URL}/api/channels/${activeChannel}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -306,7 +336,11 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
           author: name, 
           authorInitials: initials,
           authorAvatar: avatar,
-          senderId: senderId
+          senderId: senderId,
+          fileUrl,
+          fileName,
+          fileSize,
+          fileType
         })
       });
       const data = await res.json();
@@ -316,9 +350,13 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
           return [...prev, data.message];
         });
         setMessageInput('');
+        setAttachment(null);
+        setShowEmojiPicker(false);
       }
     } catch (err) {
       console.error('Failed to send message:', err);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -425,9 +463,6 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
                 <Users size={15} />
               </button>
             )}
-            <button className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-colors"><Search size={15} /></button>
-            <button className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-colors"><Pin size={15} /></button>
-            <button className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-colors"><FileText size={15} /></button>
             {isAdmin && (
               <button
                 onClick={handleDeleteChannel}
@@ -514,6 +549,23 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
                       ? 'bg-brand-purple text-white rounded-2xl rounded-tr-sm' 
                       : 'bg-white text-gray-800 border border-gray-100 rounded-2xl rounded-tl-sm'
                   }`}>
+                    {msg.fileUrl && (
+                      <div className="mb-2">
+                        {msg.fileType === 'image' ? (
+                          <img src={getMediaUrl(msg.fileUrl)} alt={msg.fileName} className="max-w-xs rounded-lg max-h-64 object-cover" />
+                        ) : msg.fileType === 'video' ? (
+                          <video src={getMediaUrl(msg.fileUrl)} controls className="max-w-xs rounded-lg max-h-64" />
+                        ) : (
+                          <a href={getMediaUrl(msg.fileUrl)} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 p-2 rounded-lg border ${isMine ? 'bg-purple-600/50 border-purple-500' : 'bg-gray-50 border-gray-200'}`}>
+                            <FileText size={20} className={isMine ? 'text-white' : 'text-brand-purple'} />
+                            <div className="flex flex-col">
+                              <span className="text-sm font-semibold truncate max-w-[200px]">{msg.fileName}</span>
+                              <span className={`text-[10px] ${isMine ? 'text-purple-200' : 'text-gray-500'}`}>{(msg.fileSize / 1024).toFixed(1)} KB</span>
+                            </div>
+                          </a>
+                        )}
+                      </div>
+                    )}
                     {msg.text}
                     
                     {/* Timestamp inline inside bubble */}
@@ -530,11 +582,46 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
         </div>
 
         {/* Message Input Area */}
-        <div className="bg-[#F0F2F5] p-3 border-t border-gray-200/60">
+        <div className="bg-[#F0F2F5] p-3 border-t border-gray-200/60 relative">
+          
+          {showEmojiPicker && (
+            <div className="absolute bottom-[80px] left-4 z-50 shadow-2xl rounded-2xl overflow-hidden border border-gray-100">
+              <EmojiPicker 
+                onEmojiClick={(emojiData) => setMessageInput(prev => prev + emojiData.emoji)} 
+                width={300}
+                height={400}
+                searchDisabled={true}
+                skinTonesDisabled={true}
+              />
+            </div>
+          )}
+
+          {attachment && (
+            <div className="absolute bottom-[70px] left-14 z-40 bg-white border border-gray-200 shadow-sm rounded-lg p-2 flex items-center gap-3">
+              <div className="bg-brand-purple/10 p-2 rounded">
+                <FileText size={16} className="text-brand-purple" />
+              </div>
+              <div className="flex flex-col max-w-[150px]">
+                <span className="text-xs font-semibold text-gray-700 truncate">{attachment.name}</span>
+                <span className="text-[10px] text-gray-400">{(attachment.size / 1024).toFixed(1)} KB</span>
+              </div>
+              <button 
+                onClick={() => setAttachment(null)}
+                className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1 rounded transition-colors ml-1"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
           {isAdmin || ch?.members?.some(m => (m._id || m) === loggedInUser?._id) ? (
             <div className="flex items-end gap-2 bg-white rounded-3xl pl-4 pr-1.5 py-1.5 shadow-sm border border-transparent transition-all focus-within:border-brand-purple/30 focus-within:shadow-md">
               
-              <button className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100 mb-0.5">
+              <button 
+                type="button"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100 mb-0.5"
+              >
                 <Smile size={22} strokeWidth={1.5} />
               </button>
               
@@ -547,20 +634,29 @@ export default function ChannelsView({ isAdmin, loggedInUser, setActiveNav, setS
                 className="flex-1 bg-transparent text-[15px] text-gray-800 outline-none placeholder-gray-400 min-h-[40px] py-2"
               />
               
-              <button className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100 mb-0.5 hidden sm:block">
+              <label className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100 mb-0.5 hidden sm:flex cursor-pointer">
                 <Paperclip size={20} strokeWidth={1.5} />
-              </button>
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setAttachment(e.target.files[0]);
+                    }
+                  }}
+                />
+              </label>
               
               <button
                 onClick={handleSendMessage}
-                disabled={!messageInput.trim()}
+                disabled={isUploading || (!messageInput.trim() && !attachment)}
                 className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-all ml-1 flex-shrink-0 mb-0.5 ${
-                  messageInput.trim() 
+                  (messageInput.trim() || attachment) && !isUploading
                     ? 'bg-brand-purple hover:bg-purple-700 shadow-md hover:scale-105 active:scale-95' 
                     : 'bg-gray-200 cursor-not-allowed text-gray-400'
                 }`}
               >
-                <Send size={18} className={messageInput.trim() ? 'ml-0.5' : ''} />
+                <Send size={18} className={(messageInput.trim() || attachment) ? 'ml-0.5' : ''} />
               </button>
             </div>
           ) : (
