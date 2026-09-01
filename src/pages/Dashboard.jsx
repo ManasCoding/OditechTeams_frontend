@@ -25,6 +25,7 @@ import ProfileView from './views/ProfileView';
 import EditProfileView from './views/EditProfileView';
 import MemberProfileView from './views/MemberProfileView';
 import GroupProfileView from './views/GroupProfileView';
+import SystemSettingsView from './views/SystemSettingsView';
 
 const teamActivityData = [
   { day: 'Mon', Messages: 40, Meetings: 10 },
@@ -80,7 +81,7 @@ const getNavItems = (isAdmin) => [
       { label: 'User Management', icon: User },
       { label: 'Role Management', icon: ShieldCheck },
       { label: 'System Monitoring', icon: Activity },
-      { label: 'Settings', icon: Settings },
+      { label: 'System Settings', icon: Settings },
     ]
   }] : [
     {
@@ -339,6 +340,7 @@ export default function Dashboard() {
                activeNav === 'Role Management' ? 'Define roles and assign permissions to users' :
                activeNav === 'Tasks' ? 'Track and manage your team\'s tasks across projects' :
                activeNav === 'Settings' ? 'Configure your workspace settings' :
+               activeNav === 'System Settings' ? 'Manage all system configurations and preferences' :
                activeNav}
             </p>
           </div>
@@ -410,7 +412,8 @@ export default function Dashboard() {
           {activeNav === 'EditProfile' && <EditProfileView loggedInUser={loggedInUser} setActiveNav={setActiveNav} />}
           {activeNav === 'MemberProfile' && <MemberProfileView memberId={selectedMemberId} groupId={selectedGroupId} setActiveNav={setActiveNav} isAdmin={isAdmin} />}
           {activeNav === 'GroupProfile' && <GroupProfileView channel={selectedChannel} setActiveNav={setActiveNav} isAdmin={isAdmin} />}
-          {!['Channels','Chat','Meetings','Calls','Members','Files','Calendar','User Management','System Monitoring','Role Management','Tasks','Profile','EditProfile','MemberProfile','GroupProfile'].includes(activeNav) && (
+          {activeNav === 'System Settings' && <SystemSettingsView />}
+          {!['Channels','Chat','Meetings','Calls','Members','Files','Calendar','User Management','System Monitoring','Role Management','Tasks','Profile','EditProfile','MemberProfile','GroupProfile','System Settings'].includes(activeNav) && (
           <div className="flex-1 overflow-y-auto p-6">
 
           {/* Stat Cards */}
