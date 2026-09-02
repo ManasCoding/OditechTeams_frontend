@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Upload, FileText, File, FileImage, Film, Archive, MoreHorizontal, Download, Eye, Trash2, Filter } from 'lucide-react';
-import API_URL from '../../../api';
+import API_URL from '../../api';
 import UploadModal from '../../components/files/UploadModal';
 import FilePreviewModal from '../../components/files/FilePreviewModal';
 

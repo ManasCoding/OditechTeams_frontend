@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import API_URL from '../../../api';
+import API_URL from '../../api';
 
 export default function FilePreviewModal({ file, onClose }) {
   const [loading, setLoading] = useState(true);
