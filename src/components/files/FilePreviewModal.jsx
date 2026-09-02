@@ -3,7 +3,7 @@ import API_URL from '../../api';
 
 export default function FilePreviewModal({ file, onClose }) {
   const [loading, setLoading] = useState(true);
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   const safeTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
   
   const isSafeToPreview = safeTypes.includes(file.mimeType);

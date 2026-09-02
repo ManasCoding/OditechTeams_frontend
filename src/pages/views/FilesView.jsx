@@ -31,7 +31,7 @@ function EmployeeFilesView({ loggedInUser }) {
 
   const fetchFiles = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/files/my-files`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -52,7 +52,7 @@ function EmployeeFilesView({ loggedInUser }) {
 
   const handleDownload = async (file) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/files/${file._id}/download`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -185,7 +185,7 @@ function AdminFilesView() {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       
       // Fetch Stats
       fetch(`${API_URL}/api/admin/files/stats`, {
@@ -218,7 +218,7 @@ function AdminFilesView() {
     if (!window.confirm(`Delete Document?\n\nEmployee: ${file.employeeName}\nFile: ${file.originalFileName}\n\nThis action cannot be undone.`)) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/admin/files/${file._id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
@@ -236,7 +236,7 @@ function AdminFilesView() {
 
   const handleDownload = async (file) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/admin/files/${file._id}/download`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });

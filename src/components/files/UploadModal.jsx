@@ -43,7 +43,7 @@ export default function UploadModal({ onClose, onUploadSuccess }) {
     setProgress(0);
     setError('');
 
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     const formData = new FormData();
     formData.append('file', file);
     formData.append('documentType', documentType);
