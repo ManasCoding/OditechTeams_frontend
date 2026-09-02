@@ -402,7 +402,7 @@ export default function Dashboard() {
           {activeNav === 'Meetings' && <MeetingsView isAdmin={isAdmin} />}
           {activeNav === 'Calls' && <CallsView />}
           {activeNav === 'Members' && <MembersView setActiveNav={setActiveNav} setSelectedMemberId={setSelectedMemberId} />}
-          {activeNav === 'Files' && <FilesView />}
+          {activeNav === 'Files' && <FilesView loggedInUser={loggedInUser} isAdmin={isAdmin} />}
           {activeNav === 'Calendar' && <CalendarView loggedInUser={loggedInUser} isAdmin={isAdmin} />}
           {activeNav === 'User Management' && <UserManagementView isAdmin={isAdmin} />}
           {activeNav === 'System Monitoring' && <SystemMonitoringView />}

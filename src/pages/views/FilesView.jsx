@@ -1,123 +1,437 @@
-import React, { useState } from 'react';
-import { Search, Upload, FileText, File, Archive, FileImage, Film, MoreHorizontal } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Upload, FileText, File, FileImage, Film, Archive, MoreHorizontal, Download, Eye, Trash2, Filter } from 'lucide-react';
+import API_URL from '../../../api';
+import UploadModal from '../../components/files/UploadModal';
+import FilePreviewModal from '../../components/files/FilePreviewModal';
 
-const files = [
-  { id: 1, name: 'Project Guidelines.pdf', size: '2.4 MB', date: 'May 24, 2024', type: 'pdf', icon: FileText, iconColor: 'text-red-500', iconBg: 'bg-red-50' },
-  { id: 2, name: 'Design System.fig', size: '15.8 MB', date: 'May 24, 2024', type: 'fig', icon: FileImage, iconColor: 'text-pink-500', iconBg: 'bg-pink-50' },
-  { id: 3, name: 'Brand Assets.zip', size: '45.2 MB', date: 'May 23, 2024', type: 'zip', icon: Archive, iconColor: 'text-blue-500', iconBg: 'bg-blue-50' },
-  { id: 4, name: 'Meeting Notes.docx', size: '1.2 MB', date: 'May 23, 2024', type: 'docx', icon: FileText, iconColor: 'text-blue-600', iconBg: 'bg-blue-50' },
-  { id: 5, name: 'Project Update.pptx', size: '8.7 MB', date: 'May 22, 2024', type: 'pptx', icon: File, iconColor: 'text-orange-500', iconBg: 'bg-orange-50' },
-];
+const getFileIcon = (type) => {
+  const t = type?.toLowerCase();
+  if (['pdf'].includes(t)) return <FileText className="text-red-500" size={24} />;
+  if (['jpg', 'jpeg', 'png', 'gif'].includes(t)) return <FileImage className="text-green-500" size={24} />;
+  if (['zip', 'rar'].includes(t)) return <Archive className="text-blue-500" size={24} />;
+  if (['mp4', 'avi'].includes(t)) return <Film className="text-purple-500" size={24} />;
+  return <File className="text-gray-500" size={24} />;
+};
 
-const categories = [
-  { label: 'Documents', icon: FileText, count: 45, color: 'text-blue-500', bg: 'bg-blue-50' },
-  { label: 'Images', icon: FileImage, count: 32, color: 'text-green-500', bg: 'bg-green-50' },
-  { label: 'Videos', icon: Film, count: 12, color: 'text-purple-500', bg: 'bg-purple-50' },
-  { label: 'Others', icon: File, count: 8, color: 'text-gray-500', bg: 'bg-gray-50' },
-];
+export default function FilesView({ loggedInUser, isAdmin }) {
+  if (isAdmin) {
+    return <AdminFilesView />;
+  }
+  return <EmployeeFilesView loggedInUser={loggedInUser} />;
+}
 
-export default function FilesView() {
+// ==========================================
+// EMPLOYEE FILES VIEW
+// ==========================================
+function EmployeeFilesView({ loggedInUser }) {
+  const [files, setFiles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showUpload, setShowUpload] = useState(false);
   const [search, setSearch] = useState('');
 
-  const filtered = files.filter(f =>
-    f.name.toLowerCase().includes(search.toLowerCase())
+  const fetchFiles = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/files/my-files`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFiles(data.data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFiles();
+  }, []);
+
+  const handleDownload = async (file) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/files/${file._id}/download`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.originalFileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      alert('Error downloading file');
+    }
+  };
+
+  const filtered = files.filter(f => 
+    f.originalFileName.toLowerCase().includes(search.toLowerCase()) ||
+    f.documentType.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalGB = 2.4;
-  const maxGB = 10;
-  const usedPct = (totalGB / maxGB) * 100;
-
   return (
-    <div className="flex h-full bg-[#F8F9FD] p-6 gap-6 overflow-y-auto">
+    <div className="flex flex-col h-full bg-[#F8F9FD] p-6 min-w-0 overflow-y-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">My Files</h2>
+          <p className="text-gray-500 text-sm mt-1">Upload and manage your important work documents.</p>
+        </div>
+        <button 
+          onClick={() => setShowUpload(true)}
+          className="flex items-center gap-2 bg-brand-purple text-white font-semibold px-5 py-2.5 rounded-xl shadow-md hover:bg-purple-700 transition-all"
+        >
+          <Upload size={18} /> Upload File
+        </button>
+      </div>
 
-      {/* Main Files Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-bold text-gray-900">Files</h2>
-          <button className="flex items-center gap-2 bg-brand-purple text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-purple-700 transition-all shadow-md shadow-purple-200">
-            <Upload size={15} /> Upload File
+      {/* Search */}
+      <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-3 mb-6 max-w-md shadow-sm">
+        <Search size={18} className="text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search your documents..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="bg-transparent outline-none text-sm w-full font-medium text-gray-700"
+        />
+      </div>
+
+      {loading ? (
+        <div className="text-gray-500">Loading your files...</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="text-6xl mb-4">📄</div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">No documents found</h3>
+          <p className="text-gray-500 mb-6">Upload your important work documents to keep them organized.</p>
+          <button 
+            onClick={() => setShowUpload(true)}
+            className="text-brand-purple font-semibold hover:underline"
+          >
+            Upload your first file
           </button>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {filtered.map(file => (
+            <div key={file._id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col group relative">
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100">
+                  {getFileIcon(file.fileType)}
+                </div>
+                <button 
+                  onClick={() => handleDownload(file)}
+                  className="p-2 text-gray-400 hover:text-brand-purple hover:bg-purple-50 rounded-lg transition-colors"
+                  title="Download"
+                >
+                  <Download size={18} />
+                </button>
+              </div>
+              
+              <h3 className="font-bold text-gray-800 text-sm truncate mb-1" title={file.originalFileName}>
+                {file.originalFileName}
+              </h3>
+              <p className="text-xs font-semibold text-brand-purple mb-4">{file.documentType}</p>
+              
+              <div className="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between text-xs text-gray-500">
+                <span className="font-medium">{(file.fileSize / 1024).toFixed(0)} KB</span>
+                <span className="flex items-center gap-1 text-green-600 font-medium bg-green-50 px-2 py-1 rounded">
+                  ✓ Uploaded
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-        {/* Search */}
-        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2.5 mb-5 max-w-xs shadow-sm">
-          <Search size={14} className="text-gray-400" />
+      {showUpload && (
+        <UploadModal 
+          onClose={() => setShowUpload(false)} 
+          onUploadSuccess={(newFile) => {
+            setFiles([newFile, ...files]);
+          }} 
+        />
+      )}
+    </div>
+  );
+}
+
+// ==========================================
+// ADMIN FILES VIEW
+// ==========================================
+function AdminFilesView() {
+  const [files, setFiles] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [documentType, setDocumentType] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [previewFile, setPreviewFile] = useState(null);
+
+  const documentTypes = [
+    'Joining Document', 'ID Proof', 'Address Proof', 
+    'Education Certificate', 'Experience Certificate', 
+    'Resume', 'Offer Letter', 'Bank Document', 
+    'Tax Document', 'Project Document', 'Other'
+  ];
+
+  const fetchData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Fetch Stats
+      fetch(`${API_URL}/api/admin/files/stats`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => { if(data.success) setStats(data.data); });
+
+      // Fetch Files
+      const res = await fetch(`${API_URL}/api/admin/files?search=${search}&documentType=${documentType}&page=${page}&limit=20`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFiles(data.data);
+        setTotalPages(data.pagination.pages);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [search, documentType, page]);
+
+  const handleDelete = async (file) => {
+    if (!window.confirm(`Delete Document?\n\nEmployee: ${file.employeeName}\nFile: ${file.originalFileName}\n\nThis action cannot be undone.`)) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/admin/files/${file._id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchData();
+      } else {
+        alert(data.message || 'Failed to delete');
+      }
+    } catch (err) {
+      alert('Error deleting file');
+    }
+  };
+
+  const handleDownload = async (file) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/admin/files/${file._id}/download`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.originalFileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      alert('Error downloading file');
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-[#F8F9FD] p-6 min-w-0 overflow-y-auto">
+      {/* Header & Stats */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Employee Documents</h2>
+        
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center text-xl">📄</div>
+              <div>
+                <p className="text-sm text-gray-500 font-medium">Total Documents</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalFiles}</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-50 text-green-500 rounded-full flex items-center justify-center text-xl">👥</div>
+              <div>
+                <p className="text-sm text-gray-500 font-medium">Employees</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.employeesWithDocuments}</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-full flex items-center justify-center text-xl">⬆️</div>
+              <div>
+                <p className="text-sm text-gray-500 font-medium">Uploaded Today</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.uploadedToday}</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center text-xl">💾</div>
+              <div>
+                <p className="text-sm text-gray-500 font-medium">Storage Used</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.storageUsed}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Filters & Search */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2.5 w-full md:w-96 shadow-sm">
+          <Search size={16} className="text-gray-400" />
           <input
             type="text"
-            placeholder="Search files..."
+            placeholder="Search employees or files..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="bg-transparent text-sm text-gray-600 outline-none w-full placeholder-gray-400"
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
+            className="bg-transparent outline-none text-sm w-full font-medium text-gray-700"
           />
         </div>
 
-        {/* File List */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-gray-100">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Recent Files</p>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {filtered.map(f => {
-              const IconComp = f.icon;
-              return (
-                <div key={f.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50/50 transition-colors group cursor-pointer">
-                  <div className={`w-10 h-10 rounded-xl ${f.iconBg} flex items-center justify-center flex-shrink-0`}>
-                    <IconComp size={18} className={f.iconColor} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{f.name}</p>
-                  </div>
-                  <span className="text-sm text-gray-400 w-16 text-right">{f.size}</span>
-                  <span className="text-sm text-gray-400 w-28 text-right">{f.date}</span>
-                  <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-all">
-                    <MoreHorizontal size={15} />
-                  </button>
-                </div>
-              );
-            })}
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2.5 shadow-sm">
+            <Filter size={16} className="text-gray-400" />
+            <select 
+              value={documentType}
+              onChange={(e) => { setDocumentType(e.target.value); setPage(1); }}
+              className="bg-transparent outline-none text-sm font-medium text-gray-700 cursor-pointer"
+            >
+              <option value="">All Document Types</option>
+              {documentTypes.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
 
-      {/* Storage Sidebar */}
-      <div className="w-64 flex-shrink-0 space-y-4">
-        {/* Storage Usage */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-          <h3 className="text-sm font-bold text-gray-900 mb-3">Storage Usage</h3>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-600">
-              <span className="font-bold text-gray-900">{totalGB} GB</span> / {maxGB} GB
-            </span>
-            <span className="text-sm font-bold text-brand-purple">{Math.round(usedPct)}%</span>
-          </div>
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-brand-purple to-blue-400 rounded-full transition-all duration-700"
-              style={{ width: `${usedPct}%` }}
-            ></div>
-          </div>
+      {/* Table */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1 flex flex-col">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-gray-600">
+            <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase text-xs font-semibold">
+              <tr>
+                <th className="px-6 py-4">Employee</th>
+                <th className="px-6 py-4">Employee ID</th>
+                <th className="px-6 py-4">File Name</th>
+                <th className="px-6 py-4">Document Type</th>
+                <th className="px-6 py-4">Upload Date</th>
+                <th className="px-6 py-4">File Size</th>
+                <th className="px-6 py-4 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan="7" className="text-center py-10">Loading documents...</td>
+                </tr>
+              ) : files.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center py-10">
+                    <p className="text-gray-800 font-semibold text-base mb-1">No employee documents found.</p>
+                    <p className="text-gray-500">Try changing your filters.</p>
+                  </td>
+                </tr>
+              ) : (
+                files.map(file => (
+                  <tr key={file._id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 font-semibold text-gray-900">{file.employeeName}</td>
+                    <td className="px-6 py-4 text-gray-500">{file.employeeId}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {getFileIcon(file.fileType)}
+                        <span className="truncate max-w-[200px]" title={file.originalFileName}>{file.originalFileName}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="bg-gray-100 text-gray-700 font-medium px-2.5 py-1 rounded-md text-xs">{file.documentType}</span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-500">
+                      {new Date(file.uploadedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      <br/>
+                      <span className="text-xs text-gray-400">{new Date(file.uploadedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">{(file.fileSize / 1024).toFixed(0)} KB</td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button 
+                          onClick={() => setPreviewFile(file)}
+                          className="p-1.5 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                          title="Preview"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDownload(file)}
+                          className="p-1.5 text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                          title="Download"
+                        >
+                          <Download size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(file)}
+                          className="p-1.5 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-
-        {/* File Categories */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-          <h3 className="text-sm font-bold text-gray-900 mb-3">File Categories</h3>
-          <div className="space-y-2.5">
-            {categories.map((c, i) => {
-              const IconComp = c.icon;
-              return (
-                <div key={i} className="flex items-center gap-3 hover:bg-gray-50 rounded-xl p-1.5 -mx-1.5 cursor-pointer transition-colors">
-                  <div className={`w-8 h-8 rounded-lg ${c.bg} flex items-center justify-center flex-shrink-0`}>
-                    <IconComp size={15} className={c.color} />
-                  </div>
-                  <span className="text-sm text-gray-700 flex-1">{c.label}</span>
-                  <span className="text-sm font-bold text-gray-900">{c.count}</span>
-                </div>
-              );
-            })}
+        
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-gray-200 flex items-center justify-center gap-2 mt-auto bg-gray-50">
+            <button 
+              disabled={page === 1}
+              onClick={() => setPage(p => p - 1)}
+              className="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 font-medium hover:bg-white disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-600 font-medium">Page {page} of {totalPages}</span>
+            <button 
+              disabled={page === totalPages}
+              onClick={() => setPage(p => p + 1)}
+              className="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 font-medium hover:bg-white disabled:opacity-50"
+            >
+              Next
+            </button>
           </div>
-        </div>
+        )}
       </div>
+
+      {previewFile && (
+        <FilePreviewModal 
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+        />
+      )}
     </div>
   );
 }
