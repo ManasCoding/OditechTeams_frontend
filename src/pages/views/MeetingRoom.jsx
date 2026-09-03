@@ -369,7 +369,7 @@ function Lobby({ meetingTitle, localStream, isMuted, isCameraOff, mediaError, on
 /* ─────────────────────────────────────────────────────────────
    Connecting Screen — shown while socket is connecting
 ───────────────────────────────────────────────────────────── */
-function ConnectingScreen({ onCancel }) {
+function ConnectingScreen({ onCancel, errorMsg }) {
   const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
@@ -387,7 +387,11 @@ function ConnectingScreen({ onCancel }) {
         <div className="w-14 h-14 border-4 border-brand-purple/20 border-t-brand-purple rounded-full animate-spin" />
         <div>
           <h2 className="text-white font-bold text-xl tracking-wide mb-2">Connecting to meeting...</h2>
-          {timedOut ? (
+          {errorMsg ? (
+            <div className="bg-red-500/20 text-red-400 p-3 rounded-lg border border-red-500/30 text-sm mb-3">
+              Connection Error: {errorMsg}
+            </div>
+          ) : timedOut ? (
             <p className="text-white/50 text-sm">
               This is taking longer than expected. Check your internet connection or try refreshing.
             </p>
@@ -395,7 +399,7 @@ function ConnectingScreen({ onCancel }) {
             <p className="text-white/50 text-sm">Establishing a secure connection</p>
           )}
         </div>
-        {timedOut && (
+        {(timedOut || errorMsg) && (
           <div className="flex gap-3 mt-2">
             <button
               onClick={() => window.location.reload()}
@@ -671,7 +675,7 @@ export default function MeetingRoom() {
      WAITING FOR SOCKET CONNECTION
   ───────────────────────────────────────────────────────── */
   if (status === 'idle') {
-    return <ConnectingScreen onCancel={() => navigate('/dashboard', { state: { activeView: 'Meetings' } })} />;
+    return <ConnectingScreen errorMsg={connectErrorMsg} onCancel={() => navigate('/dashboard', { state: { activeView: 'Meetings' } })} />;
   }
 
   /* ─────────────────────────────────────────────────────────

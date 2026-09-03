@@ -109,13 +109,21 @@ export default function useWebRTC(meetingId, userName, userId, joined, isAdmin) 
   }, []);
 
   /* ── Auto-join or pending ──────────────────────────────── */
+  const [connectErrorMsg, setConnectErrorMsg] = useState(null);
+
   useEffect(() => {
     if (!joined || !meetingId) return;
 
     console.log('[Meeting] Connecting to room:', meetingId);
     // ── Connect to /meeting namespace (no JWT needed) ─────────
-    const socket = io(`${SOCKET_URL}/meeting`);
+    // forceNew ensures it doesn't reuse the disconnected manager from socket.js
+    const socket = io(`${SOCKET_URL}/meeting`, { forceNew: true });
     socketRef.current = socket;
+
+    socket.on('connect_error', (err) => {
+      console.error('[Meeting] Socket connect error:', err.message);
+      setConnectErrorMsg(err.message);
+    });
 
     socket.on('connect', () => {
       console.log('[Meeting] Socket connected:', socket.id);
@@ -537,5 +545,6 @@ export default function useWebRTC(meetingId, userName, userId, joined, isAdmin) 
     mySocketId,
     makeInitials,
     kickedMessage,
+    connectErrorMsg,
   };
 }
