@@ -533,7 +533,8 @@ export default function MeetingRoom() {
     rejectUser,
     requestJoin,
     toggleMic, toggleCam, toggleScreenShare,
-    sendChatMessage, raiseHand, kickUser, leaveRoom, participantCount, kickedMessage, mySocketId
+    sendChatMessage, raiseHand, kickUser, leaveRoom, participantCount, kickedMessage, mySocketId,
+    connectErrorMsg,
   } = useWebRTC(meetingId, userName, userId, joined, isUserAdmin);
 
   /* ── Lobby local controls ─────────────────────────────────── */
