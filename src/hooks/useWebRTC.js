@@ -114,7 +114,7 @@ export default function useWebRTC(meetingId, userName, userId, joined, isAdmin) 
 
     console.log('[Meeting] Connecting to room:', meetingId);
     // ── Connect to /meeting namespace (no JWT needed) ─────────
-    const socket = io(`${SOCKET_URL}/meeting`, { transports: ['websocket'] });
+    const socket = io(`${SOCKET_URL}/meeting`);
     socketRef.current = socket;
 
     socket.on('connect', () => {
