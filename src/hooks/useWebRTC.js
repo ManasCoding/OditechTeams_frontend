@@ -2,12 +2,34 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
 
 const SOCKET_URL   = import.meta.env.VITE_SOCKET_URL || 'https://oditechteams-backend.onrender.com';
-const ICE_SERVERS  = {
+const ICE_SERVERS = {
   iceServers: [
+    // STUN servers — help with public IP discovery
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun3.l.google.com:19302' },
+    // TURN relay servers — required when STUN fails across NAT / different networks
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turns:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
   ],
 };
 
@@ -297,6 +319,21 @@ export default function useWebRTC(meetingId, userName, userId, joined, isAdmin) 
 
     const pc = new RTCPeerConnection(ICE_SERVERS);
 
+    // Build the peerData entry BEFORE setting any handlers so ontrack
+    // can safely read it even if it fires during the same synchronous tick.
+    const peerData = {
+      peerConnection: pc,
+      stream:         null,
+      userName:       remoteUserName,
+      isMuted:        false,
+      isCameraOff:    false,
+      isScreenSharing: false,
+      iceQueue:       [],
+      isRemoteSet:    false,
+    };
+    peersRef.current.set(remoteSocketId, peerData);
+    updatePeers();
+
     // Add local tracks
     localStreamRef.current?.getTracks().forEach(track => {
       pc.addTrack(track, localStreamRef.current);
@@ -312,35 +349,37 @@ export default function useWebRTC(meetingId, userName, userId, joined, isAdmin) 
       }
     };
 
-    // Remote track arrived
+    // Remote track arrived — entry is guaranteed to exist now
     pc.ontrack = (e) => {
       const [remoteStream] = e.streams;
       const entry = peersRef.current.get(remoteSocketId);
-      if (entry) {
+      if (entry && remoteStream) {
         entry.stream = remoteStream;
         updatePeers();
+        console.log('[Meeting] Remote track received from', remoteUserName);
+      }
+    };
+
+    // Log ICE connection state for easier debugging
+    pc.oniceconnectionstatechange = () => {
+      console.log(`[Meeting] ICE state for ${remoteUserName}: ${pc.iceConnectionState}`);
+      if (pc.iceConnectionState === 'failed') {
+        // Attempt ICE restart as a recovery measure
+        console.warn('[Meeting] ICE failed — attempting restart for', remoteUserName);
+        pc.restartIce?.();
       }
     };
 
     pc.onconnectionstatechange = () => {
-      if (['disconnected', 'failed', 'closed'].includes(pc.connectionState)) {
+      console.log(`[Meeting] Connection state for ${remoteUserName}: ${pc.connectionState}`);
+      if (pc.connectionState === 'connected') {
+        console.log('[Meeting] Peer connected:', remoteUserName);
+      }
+      if (['failed', 'closed'].includes(pc.connectionState)) {
         peersRef.current.delete(remoteSocketId);
         updatePeers();
       }
     };
-
-    const peerData = {
-      peerConnection: pc,
-      stream:         null,
-      userName:       remoteUserName,
-      isMuted:        false,
-      isCameraOff:    false,
-      isScreenSharing: false,
-      iceQueue:       [],
-      isRemoteSet:    false,
-    };
-    peersRef.current.set(remoteSocketId, peerData);
-    updatePeers();
 
     // If we should send the offer
     if (shouldOffer) {

@@ -367,6 +367,56 @@ function Lobby({ meetingTitle, localStream, isMuted, isCameraOff, mediaError, on
 }
 
 /* ─────────────────────────────────────────────────────────────
+   Connecting Screen — shown while socket is connecting
+───────────────────────────────────────────────────────────── */
+function ConnectingScreen({ onCancel }) {
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setTimedOut(true), 10000);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0B0E14]">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[15%] left-[20%] w-[500px] h-[500px] bg-brand-purple/15 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[15%] right-[20%] w-[450px] h-[450px] bg-blue-600/10 rounded-full blur-[100px]" />
+      </div>
+      <div className="relative z-10 flex flex-col items-center gap-5 max-w-sm text-center p-8">
+        <div className="w-14 h-14 border-4 border-brand-purple/20 border-t-brand-purple rounded-full animate-spin" />
+        <div>
+          <h2 className="text-white font-bold text-xl tracking-wide mb-2">Connecting to meeting...</h2>
+          {timedOut ? (
+            <p className="text-white/50 text-sm">
+              This is taking longer than expected. Check your internet connection or try refreshing.
+            </p>
+          ) : (
+            <p className="text-white/50 text-sm">Establishing a secure connection</p>
+          )}
+        </div>
+        {timedOut && (
+          <div className="flex gap-3 mt-2">
+            <button
+              onClick={() => window.location.reload()}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-purple hover:bg-purple-700 text-white text-sm font-semibold transition-colors shadow-lg shadow-purple-500/20"
+            >
+              <RefreshCw size={14} /> Retry
+            </button>
+            <button
+              onClick={onCancel}
+              className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-sm font-semibold transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
    Main Meeting Room Component
 ───────────────────────────────────────────────────────────── */
 export default function MeetingRoom() {
@@ -621,12 +671,7 @@ export default function MeetingRoom() {
      WAITING FOR SOCKET CONNECTION
   ───────────────────────────────────────────────────────── */
   if (status === 'idle') {
-    return (
-      <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0B0E14]">
-        <div className="w-10 h-10 border-4 border-brand-purple/20 border-t-brand-purple rounded-full animate-spin mb-4" />
-        <h2 className="text-white font-bold tracking-wide">Connecting to meeting...</h2>
-      </div>
-    );
+    return <ConnectingScreen onCancel={() => navigate('/dashboard', { state: { activeView: 'Meetings' } })} />;
   }
 
   /* ─────────────────────────────────────────────────────────
